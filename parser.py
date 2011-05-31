@@ -57,8 +57,8 @@ class LuaBytecode:
             bytecode - The bytecode object being parsed
             i - bytecode index to start at
 
-        Returns: A pair with the first element being a dict with the
-            function's data, and an int being the index it ended at
+        Returns: A pair containing a dict with the function's data,
+            and an int being the index it ended at
         """
         end = '>' if self.header['endianness'] == 0 else '<'
         sizeof_int = self.header['size of int']
@@ -111,8 +111,8 @@ class LuaBytecode:
         i += sizeof_int
         instructions = []
         for _ in xrange(num_instructions):
-            inst = bytecode[i:i+4]
-            i = i+4
+            inst = bytecode[i:i+sizeof_inst]
+            i = i + sizeof_inst
             instructions.append(inst)
         
         # list of constants
