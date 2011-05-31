@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import struct
-import pprint
 
 class LuaParseError(Exception):
     def __init__(self, message):
@@ -39,12 +38,8 @@ class LuaBytecode:
                         'size of instruction': size_of_instruction,
                         'size of lua_Number': size_of_lua_Number,
                         'integral flag': integral_flag }
-        print '=== header ==='
-        pprint.pprint(self.header)
 
         self.top_level_func, i = self.parse_function(bytecode, 12)
-        print '=== top level function ==='
-        pprint.pprint(self.top_level_func)
 
         # check if it reached end of file
         assert i == len(bytecode), 'i = %d, bytecode size = %d' % \
@@ -112,7 +107,7 @@ class LuaBytecode:
         instructions = []
         for _ in xrange(num_instructions):
             inst = bytecode[i:i+sizeof_inst]
-            i = i + sizeof_inst
+            i += sizeof_inst
             instructions.append(inst)
         
         # list of constants
@@ -203,13 +198,18 @@ class LuaBytecode:
         return result, i
 
 def main():
-    import sys
+    import sys, pprint
     if len(sys.argv) != 2:
-        print 'usage: interpreter lua-bytecode-file'
+        print 'usage: parser.py lua-bytecode-file'
         exit(1)
     bcfile = open(sys.argv[1], 'rb') # r = read, b = binary file
     bytecode = bcfile.read()
-    LuaBytecode(bytecode)
+    lua_bytecode = LuaBytecode(bytecode)
+    print '=== header ==='
+    pprint.pprint(lua_bytecode.header)
+    print '=== top level function ==='
+    pprint.pprint(lua_bytecode.top_level_func)
+    
 
 if __name__ == '__main__':
     main()
