@@ -12,21 +12,25 @@ opcodes = ['MOVE', 'LOADK', 'LOADBOOL', 'LOADNIL', 'GETUPVAL', 'GETGLOBAL',
 class Interpreter:
     def __init__(self, lua_object):
         self.inst_size = lua_object.header['size of instruction']
+        self.constants = {
+            '*toplevel*': lua_object.top_level_func['constants']
+            }
         self.instructions = {
             '*toplevel*': lua_object.top_level_func['instructions']
             }
+        self.registers = []
 
     def run(self):
         for inst_bytestring in self.instructions['*toplevel*']:
-            inst = struct.unpack('i', inst_bytestring)[0]
-            opcode = inst & ord('\x3f') # first 6 bits
-            # # opcode type 1
-            # a = inst & struct.unpack('i', '\x00\x00\x3f\xc0')[0]
-            # b = inst & struct.unpack('i', '\x00\x7f\xc0\x00')[0]
-            # c = inst & struct.unpack('i', '\xff\x80\x00\x00')[0]
-            # # opcode type 2/3
-            # a = inst & struct.unpack('i', '\x00\x00\x3f\xc0')[0]
-            # bx = inst & struct.unpack('i', '\xff\xff\xc0\x00')[0]
+            inst = struct.unpack('I', inst_bytestring)[0]
+            opcode = inst & 0x0000003f
+            # opcode type 1
+            # a  = (inst >> 6)  & 0x000000ff
+            # c  = (inst >> 14) & 0x000001ff
+            # b  = (inst >> 23) & 0x000001ff
+            # opcode type 2 or 3
+            # a  = (inst >> 6)  & 0x0000003f
+            # bx = (inst >> 14) & 0x0003ffff
             if opcode == 0: # MOVE
                 # iABC instruction
                 print 'MOVE NYI'
@@ -44,10 +48,18 @@ class Interpreter:
                 print 'GETUPVAL NYI'
             elif opcode == 5: # GETGLOBAL
                 # iABx instruction
-                print 'GETGLOBAL NYI'
+                a  = (inst >> 6)  & 0x0000003f
+                bx = (inst >> 14) & 0x0003ffff
+                self.register_put(a, self.constants['*toplevel*'][bx])
             elif opcode == 6: # GETTABLE
                 # iABC instruction
-                print 'GETTABLE NYI'
+                a  = (inst >> 6)  & 0x000000ff
+                c  = (inst >> 14) & 0x000001ff
+                b  = (inst >> 23) & 0x000001ff
+                table = self.registers[b]
+                index = self.constants['*toplevel*'][c - 256] if 256 & c else c
+                # TODO check if index is a valid index of table
+                self.register_put(a, index)
             elif opcode == 7: # SETGLOBAL
                 # iABx instruction
                 print 'SETGLOBAL NYI'
@@ -141,6 +153,11 @@ class Interpreter:
             elif opcode == 37: # VARARG
                 # iABC instruction
                 print 'VARARG NYI'
+    def register_put(self, i, item):
+        while (i >= len(self.registers)):
+            self.registers.append(None)
+        self.registers[i] = item
+
 
 def main():
     import sys
