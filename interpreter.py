@@ -25,9 +25,9 @@ class Interpreter:
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             # opcode type 1
-            # a  = (inst >> 6)  & 0x000000ff
-            # c  = (inst >> 14) & 0x000001ff
-            # b  = (inst >> 23) & 0x000001ff
+            # a = (inst >> 6)  & 0x000000ff
+            # c = (inst >> 14) & 0x000001ff
+            # b = (inst >> 23) & 0x000001ff
             # opcode type 2 or 3
             # a  = (inst >> 6)  & 0x0000003f
             # bx = (inst >> 14) & 0x0003ffff
@@ -36,7 +36,10 @@ class Interpreter:
                 print 'MOVE NYI'
             elif opcode == 1: # LOADK
                 # iABx instruction
-                print 'LOADK NYI'
+                a  = (inst >> 6)  & 0x0000003f
+                bx = (inst >> 14) & 0x0003ffff
+                self.register_put(a, self.constants['*toplevel*'][bx])
+
             elif opcode == 2: # LOADBOOL
                 # iABC instruction
                 print 'LOADBOOL NYI'
@@ -53,13 +56,14 @@ class Interpreter:
                 self.register_put(a, self.constants['*toplevel*'][bx])
             elif opcode == 6: # GETTABLE
                 # iABC instruction
-                a  = (inst >> 6)  & 0x000000ff
-                c  = (inst >> 14) & 0x000001ff
-                b  = (inst >> 23) & 0x000001ff
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
                 table = self.registers[b]
                 index = self.constants['*toplevel*'][c - 256] if 256 & c else c
                 # TODO check if index is a valid index of table
                 self.register_put(a, index)
+
             elif opcode == 7: # SETGLOBAL
                 # iABx instruction
                 print 'SETGLOBAL NYI'
@@ -125,13 +129,47 @@ class Interpreter:
                 print 'TESTSET NYI'
             elif opcode == 28: # CALL
                 # iABC instruction
-                print 'CALL NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                function = self.registers[a]
+                args = []
+                if b == 0:
+                    # parameters are self.registers[a+1] to top of stack
+                    args.extend(self.registers[a+1:])
+                elif b >= 2:
+                    # there are b-1 parameters
+                    # so add b-1 parameters from registers to the args list
+                    args.extend(self.registers[a+1:a+b])
+
+                # call function, saving return values in a list
+                results = self.call(function, args)
+
+                if c == 0:
+                    # save return results into registers staring from r[a]
+                    for i in xrange(len(results)):
+                        self.register_put(a+i, results[i])
+                elif c == 2:
+                    # save c-1 return results starting from r[a]
+                    for i in xrange(c-1):
+                        self.register_put(a+i, results[i])
+
             elif opcode == 29: # TAILCALL
                 # iABC instruction
                 print 'TAILCALL NYI'
             elif opcode == 30: # RETURN
                 # iABC instruction
-                print 'RETURN NYI'
+                a = (inst >> 6)  & 0x000000ff
+                b = (inst >> 23) & 0x000001ff
+                results = []
+                if b == 0:
+                    # results are in registers r[a] onwards
+                    results.extend(self.registers[a:])
+                elif b >= 2:
+                    # there are b - 1 results starting from r[a]
+                    results.extend(self.registers[a:b-1])
+                self.return_(results)
+
             elif opcode == 31: # FORLOOP
                 # iAsBx instruction
                 print 'FORLOOP NYI'
@@ -153,10 +191,19 @@ class Interpreter:
             elif opcode == 37: # VARARG
                 # iABC instruction
                 print 'VARARG NYI'
+
     def register_put(self, i, item):
         while (i >= len(self.registers)):
             self.registers.append(None)
         self.registers[i] = item
+
+    def call(self, function, args):
+        # TODO do function call
+        pass
+
+    def return_(self, results):
+        # TODO do function return
+        pass
 
 
 def main():
