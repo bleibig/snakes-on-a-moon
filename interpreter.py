@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import struct
+import library
 
 opcodes = ['MOVE', 'LOADK', 'LOADBOOL', 'LOADNIL', 'GETUPVAL', 'GETGLOBAL',
            'GETTABLE', 'SETGLOBAL', 'SETUPVAL', 'SETTABLE', 'NEWTABLE', 'SELF',
@@ -9,12 +10,16 @@ opcodes = ['MOVE', 'LOADK', 'LOADBOOL', 'LOADNIL', 'GETUPVAL', 'GETGLOBAL',
            'TAILCALL', 'RETURN', 'FORLOOP', 'FORPREP', 'TFORLOOP', 'SETLIST',
            'CLOSE', 'CLOSURE', 'VARARG']
 
+lua_globals = { 'io': library.io,
+                '_VERSION': library._VERSION, }
+
 class Interpreter:
     def __init__(self, lua_object):
         self.inst_size = lua_object.header['size of instruction']
         self.constants = {
             '*toplevel*': lua_object.top_level_func['constants']
             }
+        self.globals = lua_globals
         self.instructions = {
             '*toplevel*': lua_object.top_level_func['instructions']
             }
@@ -53,7 +58,9 @@ class Interpreter:
                 # iABx instruction
                 a  = (inst >> 6)  & 0x0000003f
                 bx = (inst >> 14) & 0x0003ffff
-                self.register_put(a, self.constants['*toplevel*'][bx])
+                global_name = self.constants['*toplevel*'][bx]
+                self.register_put(a, self.globals[global_name])
+
             elif opcode == 6: # GETTABLE
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
@@ -62,7 +69,7 @@ class Interpreter:
                 table = self.registers[b]
                 index = self.constants['*toplevel*'][c - 256] if 256 & c else c
                 # TODO check if index is a valid index of table
-                self.register_put(a, index)
+                self.register_put(a, table[index])
 
             elif opcode == 7: # SETGLOBAL
                 # iABx instruction
@@ -198,8 +205,7 @@ class Interpreter:
         self.registers[i] = item
 
     def call(self, function, args):
-        # TODO do function call
-        pass
+        function(args)
 
     def return_(self, results):
         # TODO do function return
