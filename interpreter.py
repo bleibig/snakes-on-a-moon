@@ -47,13 +47,36 @@ lua_globals = {
     'debug': library.debug,
     }
 
+class LuaTable:
+    def __init__(self, array=None, hash=None):
+        self.array = array or []
+        self.hash = hash or {}
+
+    def __getitem__(self, key):
+        if type(key) == int and key > 0:
+            return self.array[key-1] if len(self.array) >= key-1 else None
+        else:
+            return self.hash[key] if key in self.hash else None
+
+    def __setitem__(self, key, value):
+        if type(key) == int and key > 0:
+            while key > len(self.array):
+                self.array.append(None)
+            self.array[key-1] = value
+        else:
+            self.hash[key] = value
+
+    def __str__(self):
+        return 'array = %s, hash = %s' % (self.array, self.hash)
+
 class Interpreter:
-    def __init__(self, lua_object):
+    def __init__(self, lua_object, arg):
         self.inst_size = lua_object.header['size of instruction']
         self.constants = {
             '*toplevel*': lua_object.top_level_func['constants']
             }
-        self.globals = lua_globals
+        self.globals = LuaTable(hash=lua_globals)
+        self.globals['arg'] = LuaTable(array=arg)
         self.instructions = {
             '*toplevel*': lua_object.top_level_func['instructions']
             }
@@ -234,7 +257,7 @@ class Interpreter:
                 print 'VARARG NYI'
 
     def register_put(self, i, item):
-        while (i >= len(self.registers)):
+        while i >= len(self.registers):
             self.registers.append(None)
         self.registers[i] = item
 
@@ -249,13 +272,13 @@ class Interpreter:
 def main():
     import sys
     import parser
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print 'usage: interpreter.py lua-bytecode-file'
         exit(1)
     bcfile = open(sys.argv[1], 'rb') # r = read, b = binary file
     bytecode = bcfile.read()
     lua_bytecode = parser.LuaBytecode(bytecode)
-    interpreter = Interpreter(lua_bytecode)
+    interpreter = Interpreter(lua_bytecode, sys.argv[1:])
     interpreter.run()
 
 if __name__ == '__main__':
