@@ -247,7 +247,16 @@ class Interpreter:
 
             elif opcode == 31: # FORLOOP
                 # iAsBx instruction
-                print 'FORLOOP NYI'
+                a   = (inst >> 6)  & 0x0000003f
+                sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
+                self.registers[a] += self.registers[a+2]
+                ra = self.registers[a]
+                ra1 = self.registers[a+1]
+                ra2 = self.registers[a+2]
+                if (ra2 > 0 and ra <= ra1) or (ra2 < 0 and ra >= ra1):
+                    pc += sbx
+                    self.register_put(a+3, ra)
+
             elif opcode == 32: # FORPREP
                 # iAsBx instruction
                 a   = (inst >> 6)  & 0x0000003f
