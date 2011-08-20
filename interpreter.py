@@ -103,7 +103,10 @@ class Interpreter:
             # sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
             if opcode == 0: # MOVE
                 # iABC instruction
-                print 'MOVE NYI'
+                a = (inst >> 6)  & 0x000000ff
+                b = (inst >> 23) & 0x000001ff
+                self.register_put(a, self.registers[b])
+                
             elif opcode == 1: # LOADK
                 # iABx instruction
                 a  = (inst >> 6)  & 0x0000003f
