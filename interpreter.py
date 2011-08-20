@@ -69,6 +69,9 @@ class LuaTable:
     def __str__(self):
         return 'array = %s, hash = %s' % (self.array, self.hash)
 
+    def __len__(self):
+        return len(self.array)
+
 class Interpreter:
     def __init__(self, lua_object, arg):
         self.inst_size = lua_object.header['size of instruction']
@@ -169,7 +172,10 @@ class Interpreter:
                 print 'NOT NYI'
             elif opcode == 20: # LEN
                 # iABC instruction
-                print 'LEN NYI'
+                a = (inst >> 6)  & 0x000000ff
+                b = (inst >> 23) & 0x000001ff
+                self.register_put(a, len(self.registers[b]))
+
             elif opcode == 21: # CONCAT
                 # iABC instruction
                 print 'CONCAT NYI'
