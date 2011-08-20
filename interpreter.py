@@ -53,13 +53,15 @@ class LuaTable:
         self.hash = hash or {}
 
     def __getitem__(self, key):
-        if type(key) == int and key > 0:
+        if isinstance(key, (int, long, float)) and int(key) == key and key > 0:
+            key = int(key)
             return self.array[key-1] if len(self.array) >= key-1 else None
         else:
             return self.hash[key] if key in self.hash else None
 
     def __setitem__(self, key, value):
-        if type(key) == int and key > 0:
+        if isinstance(key, (int, long, float)) and int(key) == key and key > 0:
+            key = int(key)
             while key > len(self.array):
                 self.array.append(None)
             self.array[key-1] = value
@@ -79,7 +81,7 @@ class Interpreter:
             '*toplevel*': lua_object.top_level_func['constants']
             }
         self.globals = LuaTable(hash=lua_globals)
-        self.globals['arg'] = LuaTable(array=arg)
+        self.globals['arg'] = LuaTable(array=arg[1:], hash={0: arg[0]})
         self.instructions = {
             '*toplevel*': lua_object.top_level_func['instructions']
             }
@@ -135,8 +137,9 @@ class Interpreter:
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
                 table = self.registers[b]
-                index = self.constants['*toplevel*'][c - 256] if 256 & c else c
-                # TODO check if index is a valid index of table
+                index = self.constants['*toplevel*'][c - 256] \
+                    if 256 & c \
+                    else self.registers[c]
                 self.register_put(a, table[index])
 
             elif opcode == 7: # SETGLOBAL

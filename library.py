@@ -45,7 +45,13 @@ def lua_pcall(f, args):
     print 'pcall NYI'
 
 def lua_print(args):
-    print 'print NYI'
+    for arg in args:
+        if isinstance(arg, float) and int(arg) == arg:
+            print int(arg),
+        else:
+            print arg,
+        print '\t',
+    print
 
 def lua_rawequal(v1, v2):
     print 'rawequal NYI'
