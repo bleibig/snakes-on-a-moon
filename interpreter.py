@@ -117,10 +117,20 @@ class Interpreter:
 
             elif opcode == 2: # LOADBOOL
                 # iABC instruction
-                print 'LOADBOOL NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                self.register_put(a, True if b else False)
+                if c:
+                    pc += 1
+                
             elif opcode == 3: # LOADNIL
                 # iABC instruction
-                print 'LOADNIL NYI'
+                a = (inst >> 6)  & 0x000000ff
+                b = (inst >> 23) & 0x000001ff
+                for i in xrange(a, b+1):
+                    self.register_put(i, None)
+
             elif opcode == 4: # GETUPVAL
                 # iABC instruction
                 print 'GETUPVAL NYI'
