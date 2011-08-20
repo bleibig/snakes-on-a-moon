@@ -86,16 +86,21 @@ class Interpreter:
         self.registers = []
 
     def run(self):
-        for inst_bytestring in self.instructions['*toplevel*']:
+        pc = 0 # program counter
+        while pc < len(self.instructions['*toplevel*']):
+            inst_bytestring = self.instructions['*toplevel*'][pc]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             # opcode type 1
             # a = (inst >> 6)  & 0x000000ff
             # c = (inst >> 14) & 0x000001ff
             # b = (inst >> 23) & 0x000001ff
-            # opcode type 2 or 3
+            # opcode type 2
             # a  = (inst >> 6)  & 0x0000003f
             # bx = (inst >> 14) & 0x0003ffff
+            # opcode type 3
+            # a   = (inst >> 6)  & 0x0000003f
+            # sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
             if opcode == 0: # MOVE
                 # iABC instruction
                 print 'MOVE NYI'
@@ -245,7 +250,11 @@ class Interpreter:
                 print 'FORLOOP NYI'
             elif opcode == 32: # FORPREP
                 # iAsBx instruction
-                print 'FORPREP NYI'
+                a   = (inst >> 6)  & 0x0000003f
+                sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
+                self.registers[a] -= self.registers[a+2]
+                pc += sbx
+
             elif opcode == 33: # TFORLOOP
                 # iABC instruction
                 print 'TFORLOOP NYI'
@@ -261,7 +270,8 @@ class Interpreter:
             elif opcode == 37: # VARARG
                 # iABC instruction
                 print 'VARARG NYI'
-
+            pc += 1
+                
     def register_put(self, i, item):
         while i >= len(self.registers):
             self.registers.append(None)
