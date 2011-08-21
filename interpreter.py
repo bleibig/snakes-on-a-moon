@@ -294,16 +294,55 @@ class Interpreter:
 
             elif opcode == 22: # JMP
                 # iAsBx instruction
-                print 'JMP NYI'
+                sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
+                pc += sbx
+
             elif opcode == 23: # EQ
                 # iABC instruction
-                print 'EQ NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                rkb = self.constants['*toplevel*'][b-256] \
+                    if 256 & b \
+                    else (self.registers[b]
+                          if b < len(self.registers)
+                          else None)
+                rkc = self.constants['*toplevel*'][c-256] \
+                    if 256 & c \
+                    else (self.registers[c]
+                          if c < len(self.registers)
+                          else None)
+                if (rkb == rkc) != a:
+                    pc += 1
+                
             elif opcode == 24: # LT
                 # iABC instruction
-                print 'LT NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                rkb = self.constants['*toplevel*'][b-256] \
+                    if 256 & b \
+                    else self.registers[b]
+                rkc = self.constants['*toplevel*'][c-256] \
+                    if 256 & c \
+                    else self.registers[c]
+                if (rkb < rkc) != a:
+                    pc += 1
+
             elif opcode == 25: # LE
                 # iABC instruction
-                print 'LE NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                rkb = self.constants['*toplevel*'][b-256] \
+                    if 256 & b \
+                    else self.registers[b]
+                rkc = self.constants['*toplevel*'][c-256] \
+                    if 256 & c \
+                    else self.registers[c]
+                if (rkb <= rkc) != a:
+                    pc += 1
+
             elif opcode == 26: # TEST
                 # iABC instruction
                 print 'TEST NYI'
