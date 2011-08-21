@@ -190,28 +190,94 @@ class Interpreter:
                 print 'SELF NYI'
             elif opcode == 12: # ADD
                 # iABC instruction
-                print 'ADD NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                op_b = self.constants['*toplevel*'][b-256] \
+                    if 256 & b \
+                    else self.registers[b]
+                op_c = self.constants['*toplevel*'][c-256] \
+                    if 256 & c \
+                    else self.registers[c]
+                self.register_put(a, op_b + op_c)
+                
             elif opcode == 13: # SUB
                 # iABC instruction
-                print 'SUB NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                op_b = self.constants['*toplevel*'][b-256] \
+                    if 256 & b \
+                    else self.registers[b]
+                op_c = self.constants['*toplevel*'][c-256] \
+                    if 256 & c \
+                    else self.registers[c]
+                self.register_put(a, op_b - op_c)
+
             elif opcode == 14: # MUL
                 # iABC instruction
-                print 'MUL NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                op_b = self.constants['*toplevel*'][b-256] \
+                    if 256 & b \
+                    else self.registers[b]
+                op_c = self.constants['*toplevel*'][c-256] \
+                    if 256 & c \
+                    else self.registers[c]
+                self.register_put(a, op_b * op_c)
+
             elif opcode == 15: # DIV
                 # iABC instruction
-                print 'DIV NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                op_b = self.constants['*toplevel*'][b-256] \
+                    if 256 & b \
+                    else self.registers[b]
+                op_c = self.constants['*toplevel*'][c-256] \
+                    if 256 & c \
+                    else self.registers[c]
+                self.register_put(a, op_b / op_c)
+
             elif opcode == 16: # MOD
                 # iABC instruction
-                print 'MOD NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                op_b = self.constants['*toplevel*'][b-256] \
+                    if 256 & b \
+                    else self.registers[b]
+                op_c = self.constants['*toplevel*'][c-256] \
+                    if 256 & c \
+                    else self.registers[c]
+                self.register_put(a, op_b % op_c)
+
             elif opcode == 17: # POW
                 # iABC instruction
-                print 'POW NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                op_b = self.constants['*toplevel*'][b-256] \
+                    if 256 & b \
+                    else self.registers[b]
+                op_c = self.constants['*toplevel*'][c-256] \
+                    if 256 & c \
+                    else self.registers[c]
+                self.register_put(a, op_b**op_c)
+
             elif opcode == 18: # UNM
                 # iABC instruction
-                print 'UNM NYI'
+                a = (inst >> 6)  & 0x000000ff
+                b = (inst >> 23) & 0x000001ff
+                self.register_put(a, -self.registers[b])
+
             elif opcode == 19: # NOT
                 # iABC instruction
-                print 'NOT NYI'
+                a = (inst >> 6)  & 0x000000ff
+                b = (inst >> 23) & 0x000001ff
+                self.register_put(a, not self.registers[b])
+
             elif opcode == 20: # LEN
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
