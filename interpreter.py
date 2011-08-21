@@ -154,16 +154,37 @@ class Interpreter:
 
             elif opcode == 7: # SETGLOBAL
                 # iABx instruction
-                print 'SETGLOBAL NYI'
+                a  = (inst >> 6)  & 0x0000003f
+                bx = (inst >> 14) & 0x0003ffff
+                global_name = self.constants['*toplevel*'][bx]
+                self.globals[global_name] = self.registers[a]
+
             elif opcode == 8: # SETUPVAL
                 # iABC instruction
                 print 'SETUPVAL NYI'
             elif opcode == 9: # SETTABLE
                 # iABC instruction
-                print 'SETTABLE NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                table = self.registers[a]
+                index = self.constants['*toplevel*'][b - 256] \
+                    if 256 & b \
+                    else self.registers[b]
+                table[index] = self.constants['*toplevel*'][c - 256] \
+                    if 256 & c \
+                    else self.registers[c]
+
             elif opcode == 10: # NEWTABLE
                 # iABC instruction
-                print 'NEWTABLE NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                if b or c:
+                    print 'nonempty table initialization NYI'
+                else:
+                    self.register_put(a, LuaTable(array=[], hash={}))
+                
             elif opcode == 11: # SELF
                 # iABC instruction
                 print 'SELF NYI'
