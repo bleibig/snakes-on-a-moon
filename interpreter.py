@@ -147,9 +147,7 @@ class Interpreter:
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
                 table = self.registers[b]
-                index = self.constants['*toplevel*'][c - 256] \
-                    if 256 & c \
-                    else self.registers[c]
+                index = self.rk(c)
                 self.register_put(a, table[index])
 
             elif opcode == 7: # SETGLOBAL
@@ -168,12 +166,8 @@ class Interpreter:
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
                 table = self.registers[a]
-                index = self.constants['*toplevel*'][b - 256] \
-                    if 256 & b \
-                    else self.registers[b]
-                table[index] = self.constants['*toplevel*'][c - 256] \
-                    if 256 & c \
-                    else self.registers[c]
+                index = self.rk(b)
+                table[index] = self.rk(c)
 
             elif opcode == 10: # NEWTABLE
                 # iABC instruction
@@ -193,78 +187,54 @@ class Interpreter:
                 a = (inst >> 6)  & 0x000000ff
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
-                op_b = self.constants['*toplevel*'][b-256] \
-                    if 256 & b \
-                    else self.registers[b]
-                op_c = self.constants['*toplevel*'][c-256] \
-                    if 256 & c \
-                    else self.registers[c]
-                self.register_put(a, op_b + op_c)
+                rkb = self.rk(b)
+                rkc = self.rk(c)
+                self.register_put(a, rkb + rkc)
                 
             elif opcode == 13: # SUB
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
-                op_b = self.constants['*toplevel*'][b-256] \
-                    if 256 & b \
-                    else self.registers[b]
-                op_c = self.constants['*toplevel*'][c-256] \
-                    if 256 & c \
-                    else self.registers[c]
-                self.register_put(a, op_b - op_c)
+                rkb = self.rk(b)
+                rkc = self.rk(c)
+                self.register_put(a, rkb - rkc)
 
             elif opcode == 14: # MUL
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
-                op_b = self.constants['*toplevel*'][b-256] \
-                    if 256 & b \
-                    else self.registers[b]
-                op_c = self.constants['*toplevel*'][c-256] \
-                    if 256 & c \
-                    else self.registers[c]
-                self.register_put(a, op_b * op_c)
+                rkb = self.rk(b)
+                rkc = self.rk(c)
+                self.register_put(a, rkb * rkc)
 
             elif opcode == 15: # DIV
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
-                op_b = self.constants['*toplevel*'][b-256] \
-                    if 256 & b \
-                    else self.registers[b]
-                op_c = self.constants['*toplevel*'][c-256] \
-                    if 256 & c \
-                    else self.registers[c]
-                self.register_put(a, op_b / op_c)
+                rkb = self.rk(b)
+                rkc = self.rk(c)
+                self.register_put(a, rkb / rkc)
 
             elif opcode == 16: # MOD
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
-                op_b = self.constants['*toplevel*'][b-256] \
-                    if 256 & b \
-                    else self.registers[b]
-                op_c = self.constants['*toplevel*'][c-256] \
-                    if 256 & c \
-                    else self.registers[c]
-                self.register_put(a, op_b % op_c)
+                rkb = self.rk(b)
+                rkc = self.rk(c)
+                self.register_put(a, rkb % rkc)
 
             elif opcode == 17: # POW
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
-                op_b = self.constants['*toplevel*'][b-256] \
-                    if 256 & b \
-                    else self.registers[b]
-                op_c = self.constants['*toplevel*'][c-256] \
-                    if 256 & c \
-                    else self.registers[c]
-                self.register_put(a, op_b**op_c)
+                rkb = self.rk(b)
+                rkc = self.rk(c)
+                self.register_put(a, rkb**rkc)
 
             elif opcode == 18: # UNM
                 # iABC instruction
@@ -302,16 +272,8 @@ class Interpreter:
                 a = (inst >> 6)  & 0x000000ff
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
-                rkb = self.constants['*toplevel*'][b-256] \
-                    if 256 & b \
-                    else (self.registers[b]
-                          if b < len(self.registers)
-                          else None)
-                rkc = self.constants['*toplevel*'][c-256] \
-                    if 256 & c \
-                    else (self.registers[c]
-                          if c < len(self.registers)
-                          else None)
+                rkb = self.rk(b)
+                rkc = self.rk(c)
                 if (rkb == rkc) != a:
                     pc += 1
                 
@@ -320,12 +282,8 @@ class Interpreter:
                 a = (inst >> 6)  & 0x000000ff
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
-                rkb = self.constants['*toplevel*'][b-256] \
-                    if 256 & b \
-                    else self.registers[b]
-                rkc = self.constants['*toplevel*'][c-256] \
-                    if 256 & c \
-                    else self.registers[c]
+                rkb = self.rk(b)
+                rkc = self.rk(c)
                 if (rkb < rkc) != a:
                     pc += 1
 
@@ -334,12 +292,8 @@ class Interpreter:
                 a = (inst >> 6)  & 0x000000ff
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
-                rkb = self.constants['*toplevel*'][b-256] \
-                    if 256 & b \
-                    else self.registers[b]
-                rkc = self.constants['*toplevel*'][c-256] \
-                    if 256 & c \
-                    else self.registers[c]
+                rkb = self.rk(b)
+                rkc = self.rk(c)
                 if (rkb <= rkc) != a:
                     pc += 1
 
@@ -439,6 +393,12 @@ class Interpreter:
     def return_(self, results):
         # TODO do function return
         pass
+
+    def rk(self, o):
+        if o & 256:
+            return self.constants['*toplevel*'][o-256]
+        else:
+            return self.registers[o] if o < len(self.registers) else None
 
 
 def main():
