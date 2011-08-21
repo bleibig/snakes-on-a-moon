@@ -299,10 +299,23 @@ class Interpreter:
 
             elif opcode == 26: # TEST
                 # iABC instruction
-                print 'TEST NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                ra = self.registers[a] if a < len(self.registers) else None
+                if ra == c:
+                    pc += 1
+
             elif opcode == 27: # TESTSET
                 # iABC instruction
-                print 'TESTSET NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                rb = self.registers[b] if b < len(self.registers) else None
+                if rb == c:
+                    pc += 1
+                else:
+                    self.register_put(a, rb)
+
             elif opcode == 28: # CALL
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
