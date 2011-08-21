@@ -286,7 +286,12 @@ class Interpreter:
 
             elif opcode == 21: # CONCAT
                 # iABC instruction
-                print 'CONCAT NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                newstr = ''.join([self.registers[i] for i in xrange(b, c+1)])
+                self.register_put(a, newstr)
+
             elif opcode == 22: # JMP
                 # iAsBx instruction
                 print 'JMP NYI'
