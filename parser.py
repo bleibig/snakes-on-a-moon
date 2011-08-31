@@ -83,8 +83,8 @@ class LuaBytecode:
         else:
             size_t = 'l'
 
-        sourcename_size = struct.unpack(end + int_, bytecode[i:i+sizeof_int])[0]
-        i += sizeof_int
+        sourcename_size = struct.unpack(size_t, bytecode[i:i+sizeof_sizet])[0]
+        i += sizeof_sizet
         sourcename = bytecode[i:i+sourcename_size-1]
         i += sourcename_size
 
@@ -127,7 +127,7 @@ class LuaBytecode:
                 i += sizeof_ln
                 constants.append(value)
             elif constant_type == 4: # string
-                value_length = struct.unpack(end + size_t,
+                value_length = struct.unpack(size_t,
                                              bytecode[i:i+sizeof_sizet])[0]
                 i += sizeof_sizet
                 value = bytecode[i:i+value_length-1]
@@ -158,7 +158,7 @@ class LuaBytecode:
         i += sizeof_int
         locvars = []
         for j in xrange(sizelocvars):
-            varname_length = struct.unpack(end + size_t,
+            varname_length = struct.unpack(size_t,
                                            bytecode[i:i+sizeof_sizet])[0]
             i += sizeof_sizet
             varname = bytecode[i:i+varname_length-1]
@@ -174,7 +174,7 @@ class LuaBytecode:
         i += sizeof_int
         upvalues = []
         for _ in xrange(sizeupvalues):
-            upvalue_length = struct.unpack(end + size_t,
+            upvalue_length = struct.unpack(size_t,
                                            bytecode[i:i+sizeof_sizet])[0]
             i += sizeof_sizet
             upvalue = bytecode[i:i+upvalue_length-1]
