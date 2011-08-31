@@ -9,6 +9,5 @@ then
     done
 else
     echo "error: luac not found"
-    return
 fi
 
