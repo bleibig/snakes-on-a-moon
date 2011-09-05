@@ -381,7 +381,17 @@ class Interpreter:
 
             elif opcode == 33: # TFORLOOP
                 # iABC instruction
-                print 'TFORLOOP NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                iter_func = self.registers[a]
+                state = self.registers[a+1]
+                index = self.registers[a+2] if len(self.registers) > a+2 else None
+                for i in xrange(a + 3, a + c + 3):
+                    self.register_put(i, self.call(iter_func, [state, index]))
+                if self.registers[a+3] is not None:
+                    self.registers[a+2] = self.registers[a+3]
+                else:
+                    pc += 1
             elif opcode == 34: # SETLIST
                 # iABC instruction
                 print 'SETLIST NYI'
