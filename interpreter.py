@@ -18,6 +18,7 @@ lua_globals = {
     '_G': library._G,
     'getfenv': library.lua_getfenv,
     'getmetatable': library.lua_getmetatable,
+    'ipairs': library.lua_ipairs,
     'load': library.lua_load,
     'loadfile': library.lua_loadfile,
     'loadstring': library.lua_loadstring,

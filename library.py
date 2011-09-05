@@ -23,8 +23,18 @@ def lua_getfenv(f=None):
 def lua_getmetatable(object_):
     print 'getmetatable NYI'
 
-def lua_getipairs(t):
-    print 'getipairs NYI'
+def lua_ipairs(t):
+    def iter_func(table, index):
+        assert isinstance(index, (int, long, float))
+        assert int(index) == index
+        assert index > 0
+        index = int(index)
+        if index < len(table):
+            nextindex = index + 1
+            return nextindex, table[nextindex]
+        else:
+            return None
+    return iter_func, t, 0
 
 def lua_load(func, chunkname=None):
     print 'load NYI'
@@ -64,7 +74,7 @@ def lua_next(table, index=None):
     return None
 
 def lua_pairs(t):
-    print 'pairs NYI'
+    return lua_next, t, None
 
 def lua_pcall(f, args):
     print 'pcall NYI'
