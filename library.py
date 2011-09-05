@@ -36,7 +36,32 @@ def lua_loadstring(string, chunkname=None):
     print 'loadstring NYI'
 
 def lua_next(table, index=None):
-    print 'next NYI'
+    if index:
+        if isinstance(index, (int, long, float)) \
+            and int(index) == index \
+            and index > 0:
+            # index is array index
+            index = int(index)
+            if index < len(table):
+                nextindex = index + 1
+                return nextindex, table[nextindex]
+            elif index == len(table):
+                # last array index, so return first index and element in hash
+                key = table.hash.keys()[0]
+                return key, table[key]
+        # otherwise index is hash key
+        keys = table.hash.keys()
+        i = keys.index(index)
+        if i < len(keys) - 1:
+            nextkey = keys[i+1]
+            return nextkey, table[nextkey]
+    else:
+        if table.array:
+            return 1, table[1]
+        elif table.hash:
+            key = table.hash.keys()[0]
+            return key, table[key]
+    return None
 
 def lua_pairs(t):
     print 'pairs NYI'
