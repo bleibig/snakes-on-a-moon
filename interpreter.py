@@ -3,6 +3,8 @@
 import struct
 import library
 
+FIELDS_PER_FLUSH = 50
+
 opcodes = ['MOVE', 'LOADK', 'LOADBOOL', 'LOADNIL', 'GETUPVAL', 'GETGLOBAL',
            'GETTABLE', 'SETGLOBAL', 'SETUPVAL', 'SETTABLE', 'NEWTABLE', 'SELF',
            'ADD', 'SUB', 'MUL', 'DIV', 'MOD', 'POW', 'UNM', 'NOT', 'LEN',
@@ -394,7 +396,22 @@ class Interpreter:
                     pc += 1
             elif opcode == 34: # SETLIST
                 # iABC instruction
-                print 'SETLIST NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                table = self.registers[a]
+                if b == 0:
+                    # set table from elements from r[a+1] to top of stack
+                    for i in xrange(1, len(self.registers[(a+1):])):
+                        table[(c-1) * FIELDS_PER_FLUSH + i] = self.registers[a + i]
+                else:
+                    if c == 0:
+                        # cast next instruction as int and let that be c
+                        c = self.instructions['*toplevel*'][pc+1]
+                        pc += 1 # and skip next instruction as its not an instruction
+                    for i in xrange(1, b + 1):
+                        table[(c-1) * FIELDS_PER_FLUSH + i] = self.registers[a + i]
+
             elif opcode == 35: # CLOSE
                 # iABC instruction
                 print 'CLOSE NYI'
