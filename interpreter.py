@@ -178,7 +178,14 @@ class Interpreter:
                 c = (inst >> 14) & 0x000001ff
                 b = (inst >> 23) & 0x000001ff
                 if b or c:
-                    print 'nonempty table initialization NYI'
+                    b_x =  b & 0x07       # right 3 bits
+                    b_e = (b & 0xf8) >> 3 # left 5 bits
+                    c_x =  c * 0x07
+                    c_e = (c & 0x1f) >> 3
+                    array_size = b_x if b_e == 0 else (10 + b_x) * (2 ** (b_e - 1))
+                    hash_size  = c_x if c_e == 0 else (10 + c_x) * (2 ** (c_e - 1))
+                    array = [None for _ in xrange(array_size)]
+                    self.register_put(a, LuaTable(array=array, hash={}))
                 else:
                     self.register_put(a, LuaTable(array=[], hash={}))
                 
