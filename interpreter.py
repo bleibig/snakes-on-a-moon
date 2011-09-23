@@ -191,7 +191,13 @@ class Interpreter:
                 
             elif opcode == 11: # SELF
                 # iABC instruction
-                print 'SELF NYI'
+                a = (inst >> 6)  & 0x000000ff
+                c = (inst >> 14) & 0x000001ff
+                b = (inst >> 23) & 0x000001ff
+                table = self.registers[b]
+                self.register_put(a + 1, b)
+                self.register_put(a, table[self.rk(c)]);
+
             elif opcode == 12: # ADD
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
@@ -355,7 +361,12 @@ class Interpreter:
 
             elif opcode == 29: # TAILCALL
                 # iABC instruction
-                print 'TAILCALL NYI'
+                a = (inst >> 6)  & 0x000000ff
+                b = (inst >> 23) & 0x000001ff
+                function = self.registers[a]
+                args = self.registers[a+1:a+b]
+                self.return_(self.call(function, args))
+
             elif opcode == 30: # RETURN
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
@@ -401,6 +412,7 @@ class Interpreter:
                     self.registers[a+2] = self.registers[a+3]
                 else:
                     pc += 1
+
             elif opcode == 34: # SETLIST
                 # iABC instruction
                 a = (inst >> 6)  & 0x000000ff
@@ -427,7 +439,15 @@ class Interpreter:
                 print 'CLOSURE NYI'
             elif opcode == 37: # VARARG
                 # iABC instruction
-                print 'VARARG NYI'
+                a = (inst >> 6)  & 0x000000ff
+                b = (inst >> 23) & 0x000001ff
+                if b == 0:
+                    # TODO
+                    pass
+                else:
+                    for i in xrange(a, a + b):
+                        self.register_put(i, None)
+
             pc += 1
                 
     def register_put(self, i, item):
