@@ -107,76 +107,56 @@ class Interpreter:
             # a   = (inst >> 6)  & 0x0000003f
             # sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
             if opcode == 0: # MOVE
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, _ = self.getabc(inst)
                 self.register_put(a, self.registers[b])
                 
             elif opcode == 1: # LOADK
-                # iABx instruction
-                a  = (inst >> 6)  & 0x0000003f
-                bx = (inst >> 14) & 0x0003ffff
+                a, bx = self.getabx(inst)
                 self.register_put(a, self.constants['*toplevel*'][bx])
 
             elif opcode == 2: # LOADBOOL
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 self.register_put(a, True if b else False)
                 if c:
                     pc += 1
                 
             elif opcode == 3: # LOADNIL
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, _ = self.getabc(inst)
                 for i in xrange(a, b+1):
                     self.register_put(i, None)
 
             elif opcode == 4: # GETUPVAL
-                # iABC instruction
+                a, b, _ = self.getabc(inst)
                 print 'GETUPVAL NYI'
+                
             elif opcode == 5: # GETGLOBAL
-                # iABx instruction
-                a  = (inst >> 6)  & 0x0000003f
-                bx = (inst >> 14) & 0x0003ffff
+                a, bx = self.getabx(inst)
                 global_name = self.constants['*toplevel*'][bx]
                 self.register_put(a, self.globals[global_name])
 
             elif opcode == 6: # GETTABLE
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 table = self.registers[b]
                 index = self.rk(c)
                 self.register_put(a, table[index])
 
             elif opcode == 7: # SETGLOBAL
-                # iABx instruction
-                a  = (inst >> 6)  & 0x0000003f
-                bx = (inst >> 14) & 0x0003ffff
+                a, bx = self.getabx(inst)
                 global_name = self.constants['*toplevel*'][bx]
                 self.globals[global_name] = self.registers[a]
 
             elif opcode == 8: # SETUPVAL
-                # iABC instruction
+                a, b, _ = self.getabc(inst)
                 print 'SETUPVAL NYI'
+                
             elif opcode == 9: # SETTABLE
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 table = self.registers[a]
                 index = self.rk(b)
                 table[index] = self.rk(c)
 
             elif opcode == 10: # NEWTABLE
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 if b or c:
                     b_x =  b & 0x07       # right 3 bits
                     b_e = (b & 0xf8) >> 3 # left 5 bits
@@ -190,142 +170,97 @@ class Interpreter:
                     self.register_put(a, LuaTable(array=[], hash={}))
                 
             elif opcode == 11: # SELF
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 table = self.registers[b]
                 self.register_put(a + 1, b)
                 self.register_put(a, table[self.rk(c)]);
 
             elif opcode == 12: # ADD
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 self.register_put(a, rkb + rkc)
                 
             elif opcode == 13: # SUB
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 self.register_put(a, rkb - rkc)
 
             elif opcode == 14: # MUL
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 self.register_put(a, rkb * rkc)
 
             elif opcode == 15: # DIV
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c, = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 self.register_put(a, rkb / rkc)
 
             elif opcode == 16: # MOD
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 self.register_put(a, rkb % rkc)
 
             elif opcode == 17: # POW
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 self.register_put(a, rkb**rkc)
 
             elif opcode == 18: # UNM
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, _ = self.getabc(inst)
                 self.register_put(a, -self.registers[b])
 
             elif opcode == 19: # NOT
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, _ = self.getabc(inst)
                 self.register_put(a, not self.registers[b])
 
             elif opcode == 20: # LEN
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, _ = self.getabc(inst)
                 self.register_put(a, len(self.registers[b]))
 
             elif opcode == 21: # CONCAT
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 newstr = ''.join([self.registers[i] for i in xrange(b, c+1)])
                 self.register_put(a, newstr)
 
             elif opcode == 22: # JMP
-                # iAsBx instruction
-                sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
+                _, sbx = self.getasbx(inst)
                 pc += sbx
 
             elif opcode == 23: # EQ
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 if (rkb == rkc) != a:
                     pc += 1
                 
             elif opcode == 24: # LT
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 if (rkb < rkc) != a:
                     pc += 1
 
             elif opcode == 25: # LE
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 if (rkb <= rkc) != a:
                     pc += 1
 
             elif opcode == 26: # TEST
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
+                a, _, c = self.getabc(inst)
                 ra = self.registers[a] if a < len(self.registers) else None
                 if ra == c:
                     pc += 1
 
             elif opcode == 27: # TESTSET
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 rb = self.registers[b] if b < len(self.registers) else None
                 if rb == c:
                     pc += 1
@@ -333,10 +268,7 @@ class Interpreter:
                     self.register_put(a, rb)
 
             elif opcode == 28: # CALL
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 function = self.registers[a]
                 args = []
                 if b == 0:
@@ -360,17 +292,13 @@ class Interpreter:
                         self.register_put(a+i, results[i])
 
             elif opcode == 29: # TAILCALL
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, _ = self.getabc(inst)
                 function = self.registers[a]
                 args = self.registers[a+1:a+b]
                 self.return_(self.call(function, args))
 
             elif opcode == 30: # RETURN
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, _ = self.getabc(inst)
                 results = []
                 if b == 0:
                     # results are in registers r[a] onwards
@@ -381,9 +309,7 @@ class Interpreter:
                 self.return_(results)
 
             elif opcode == 31: # FORLOOP
-                # iAsBx instruction
-                a   = (inst >> 6)  & 0x0000003f
-                sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
+                a, sbx = self.getasbx(inst)
                 self.registers[a] += self.registers[a+2]
                 ra = self.registers[a]
                 ra1 = self.registers[a+1]
@@ -393,16 +319,12 @@ class Interpreter:
                     self.register_put(a+3, ra)
 
             elif opcode == 32: # FORPREP
-                # iAsBx instruction
-                a   = (inst >> 6)  & 0x0000003f
-                sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
+                a, sbx = self.getasbx(inst)
                 self.registers[a] -= self.registers[a+2]
                 pc += sbx
 
             elif opcode == 33: # TFORLOOP
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
+                a, _, c = self.getabc(inst)
                 iter_func = self.registers[a]
                 state = self.registers[a+1]
                 index = self.registers[a+2] if len(self.registers) > a+2 else None
@@ -414,10 +336,7 @@ class Interpreter:
                     pc += 1
 
             elif opcode == 34: # SETLIST
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                c = (inst >> 14) & 0x000001ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, c = self.getabc(inst)
                 table = self.registers[a]
                 if b == 0:
                     # set table from elements from r[a+1] to top of stack
@@ -432,15 +351,15 @@ class Interpreter:
                         table[(c-1) * FIELDS_PER_FLUSH + i] = self.registers[a + i]
 
             elif opcode == 35: # CLOSE
-                # iABC instruction
+                a, _, _ = self.getabc(inst)
                 print 'CLOSE NYI'
+                
             elif opcode == 36: # CLOSURE
-                # iABx instruction
+                a, bx = self.getabx(inst)
                 print 'CLOSURE NYI'
+                
             elif opcode == 37: # VARARG
-                # iABC instruction
-                a = (inst >> 6)  & 0x000000ff
-                b = (inst >> 23) & 0x000001ff
+                a, b, _ = self.getabc(inst)
                 if b == 0:
                     # TODO
                     pass
@@ -449,7 +368,26 @@ class Interpreter:
                         self.register_put(i, None)
 
             pc += 1
-                
+
+    @staticmethod
+    def getabc(inst):
+        a = (inst >> 6)  & 0x000000ff
+        c = (inst >> 14) & 0x000001ff
+        b = (inst >> 23) & 0x000001ff
+        return (a, b, c)
+
+    @staticmethod
+    def getabx(inst):
+        a  = (inst >> 6)  & 0x0000003f
+        bx = (inst >> 14) & 0x0003ffff
+        return (a, bx)
+
+    @staticmethod
+    def getasbx(inst):
+        a   = (inst >> 6)  & 0x0000003f
+        sbx = ((inst >> 14) & 0x0003ffff) - (0x0003ffff >> 1)
+        return (a, sbx)
+
     def register_put(self, i, item):
         while i >= len(self.registers):
             self.registers.append(None)
