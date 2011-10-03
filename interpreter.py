@@ -81,6 +81,8 @@ class Interpreter:
         self.instructions = {
             '*toplevel*': lua_object.top_level_func['instructions']
             }
+        # instructions for current function
+        self.curr_insts = self.instructions['*toplevel*']
         self.registers = []
         self.op_functions = \
             [self.move, self.loadk, self.loadbool, self.loadnil,
@@ -95,8 +97,8 @@ class Interpreter:
 
     def run(self):
         pc = 0 # program counter
-        while pc < len(self.instructions['*toplevel*']):
-            inst_bytestring = self.instructions['*toplevel*'][pc]
+        while pc < len(self.curr_insts):
+            inst_bytestring = self.curr_insts[pc]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             f = self.op_functions[opcode]
@@ -360,7 +362,7 @@ class Interpreter:
         else:
             if c == 0:
                 # cast next instruction as int and let that be c
-                c = self.instructions['*toplevel*'][pc+1]
+                c = self.curr_insts[pc+1]
                 pc += 1 # and skip next instruction as its not an instruction
             for i in xrange(1, b + 1):
                 table[(c-1) * FIELDS_PER_FLUSH + i] = self.registers[a + i]
