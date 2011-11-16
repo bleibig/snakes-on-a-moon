@@ -83,7 +83,7 @@ class Interpreter:
             }
         # instructions for current function
         self.curr_insts = self.instructions['*toplevel*']
-        self.registers = []
+        self.registers = [None]
         self.op_functions = \
             [self.move, self.loadk, self.loadbool, self.loadnil,
              self.getupval, self.getglobal, self.gettable,
@@ -96,14 +96,14 @@ class Interpreter:
              self.setlist, self.close, self.closure, self.vararg]
 
     def run(self):
-        pc = 0 # program counter
-        while pc < len(self.curr_insts):
-            inst_bytestring = self.curr_insts[pc]
+        self.pc = 0 # program counter
+        while self.pc < len(self.curr_insts):
+            inst_bytestring = self.curr_insts[self.pc]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             f = self.op_functions[opcode]
             f(inst)
-            pc += 1
+            self.pc += 1
 
     @staticmethod
     def getabc(inst):
@@ -136,7 +136,7 @@ class Interpreter:
         a, b, c = self.getabc(inst)
         self.register_put(a, True if b else False)
         if c:
-            pc += 1
+            self.pc += 1
 
     def loadnil(self, inst):
         a, b, _ = self.getabc(inst)
@@ -248,40 +248,40 @@ class Interpreter:
 
     def jmp(self, inst):
         _, sbx = self.getasbx(inst)
-        pc += sbx
+        self.pc += sbx
 
     def eq(self, inst):
                 a, b, c = self.getabc(inst)
                 rkb = self.rk(b)
                 rkc = self.rk(c)
                 if (rkb == rkc) != a:
-                    pc += 1
+                    self.pc += 1
 
     def lt(self, inst):
         a, b, c = self.getabc(inst)
         rkb = self.rk(b)
         rkc = self.rk(c)
         if (rkb < rkc) != a:
-            pc += 1
+            self.pc += 1
 
     def le(self, inst):
         a, b, c = self.getabc(inst)
         rkb = self.rk(b)
         rkc = self.rk(c)
         if (rkb <= rkc) != a:
-            pc += 1
+            self.pc += 1
 
     def test(self, inst):
         a, _, c = self.getabc(inst)
         ra = self.registers[a] if a < len(self.registers) else None
         if ra == c:
-            pc += 1
+            self.pc += 1
 
     def testset(self, inst):
         a, b, c = self.getabc(inst)
         rb = self.registers[b] if b < len(self.registers) else None
         if rb == c:
-            pc += 1
+            self.pc += 1
         else:
             self.register_put(a, rb)
 
@@ -312,7 +312,7 @@ class Interpreter:
         a, b, _ = self.getabc(inst)
         function = self.registers[a]
         args = self.registers[a+1:a+b]
-        self.return_(self.call(function, args))
+        self.freturn(self.call(function, args))
 
     def return_(self, inst):
         a, b, _ = self.getabc(inst)
@@ -323,7 +323,7 @@ class Interpreter:
         elif b >= 2:
             # there are b - 1 results starting from r[a]
             results.extend(self.registers[a:b-1])
-        self.return_(results)
+        self.freturn(results)
         
     def forloop(self, inst):
         a, sbx = self.getasbx(inst)
@@ -332,13 +332,13 @@ class Interpreter:
         ra1 = self.registers[a+1]
         ra2 = self.registers[a+2]
         if (ra2 > 0 and ra <= ra1) or (ra2 < 0 and ra >= ra1):
-            pc += sbx
+            self.pc += sbx
             self.register_put(a+3, ra)
 
     def forprep(self, inst):
         a, sbx = self.getasbx(inst)
         self.registers[a] -= self.registers[a+2]
-        pc += sbx
+        self.pc += sbx
 
     def tforloop(self, inst):
         a, _, c = self.getabc(inst)
@@ -346,11 +346,11 @@ class Interpreter:
         state = self.registers[a+1]
         index = self.registers[a+2] if len(self.registers) > a+2 else None
         for i in xrange(a + 3, a + c + 3):
-            self.register_put(i, self.call(iter_func, [state, index]))
+            self.register_put(i, self.fcall(iter_func, [state, index]))
         if self.registers[a+3] is not None:
             self.registers[a+2] = self.registers[a+3]
         else:
-            pc += 1
+            self.pc += 1
 
     def setlist(self, inst):
         a, b, c = self.getabc(inst)
@@ -362,8 +362,8 @@ class Interpreter:
         else:
             if c == 0:
                 # cast next instruction as int and let that be c
-                c = self.curr_insts[pc+1]
-                pc += 1 # and skip next instruction as its not an instruction
+                c = self.curr_insts[self.pc+1]
+                self.pc += 1 # and skip next instruction as its not an instruction
             for i in xrange(1, b + 1):
                 table[(c-1) * FIELDS_PER_FLUSH + i] = self.registers[a + i]
 
@@ -392,7 +392,7 @@ class Interpreter:
     def fcall(self, function, args):
         function(args)
 
-    def return_(self, results):
+    def freturn(self, results):
         # TODO do function return
         pass
 
