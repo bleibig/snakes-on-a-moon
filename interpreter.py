@@ -72,14 +72,14 @@ class LuaTable:
 
 class Interpreter:
     def __init__(self, lua_object, arg):
-        self.inst_size = lua_object.header['size of instruction']
+        self.inst_size = lua_object.header.size_of_instruction
         self.constants = {
-            '*toplevel*': lua_object.top_level_func['constants']
+            '*toplevel*': lua_object.top_level_func.constants
             }
         self.globals = LuaTable(hash=lua_globals)
         self.globals['arg'] = LuaTable(array=arg[1:], hash={0: arg[0]})
         self.instructions = {
-            '*toplevel*': lua_object.top_level_func['instructions']
+            '*toplevel*': lua_object.top_level_func.instructions
             }
         # instructions for current function
         self.curr_insts = self.instructions['*toplevel*']
