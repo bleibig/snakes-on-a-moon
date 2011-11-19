@@ -72,18 +72,10 @@ class LuaTable:
 
 class Interpreter:
     def __init__(self, lua_object, arg):
-        self.inst_size = lua_object.header.size_of_instruction
-        self.constants = {
-            '*toplevel*': lua_object.top_level_func.constants
-            }
         self.globals = LuaTable(hash=lua_globals)
         self.globals['arg'] = LuaTable(array=arg[1:], hash={0: arg[0]})
-        self.instructions = {
-            '*toplevel*': lua_object.top_level_func.instructions
-            }
-        # instructions for current function
-        self.curr_insts = self.instructions['*toplevel*']
         self.registers = [None]
+        self.top_level_func = lua_object.top_level_func
         self.op_functions = \
             [self.move, self.loadk, self.loadbool, self.loadnil,
              self.getupval, self.getglobal, self.gettable,
@@ -95,14 +87,15 @@ class Interpreter:
              self.return_, self.forloop, self.forprep, self.tforloop,
              self.setlist, self.close, self.closure, self.vararg]
 
-    def run(self):
+    def run(self, function):
+        self.constants = function.constants
+        self.instructions = function.instructions
         self.pc = 0 # program counter
-        while self.pc < len(self.curr_insts):
-            inst_bytestring = self.curr_insts[self.pc]
+        while self.pc < len(self.instructions):
+            inst_bytestring = self.instructions[self.pc]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
-            f = self.op_functions[opcode]
-            f(inst)
+            self.op_functions[opcode](inst)
             self.pc += 1
 
     @staticmethod
@@ -130,7 +123,7 @@ class Interpreter:
 
     def loadk(self, inst):
         a, bx = self.getabx(inst)
-        self.register_put(a, self.constants['*toplevel*'][bx])
+        self.register_put(a, self.constants[bx])
         
     def loadbool(self, inst):
         a, b, c = self.getabc(inst)
@@ -149,7 +142,7 @@ class Interpreter:
 
     def getglobal(self, inst):
         a, bx = self.getabx(inst)
-        global_name = self.constants['*toplevel*'][bx]
+        global_name = self.constants[bx]
         self.register_put(a, self.globals[global_name])
 
     def gettable(self, inst):
@@ -160,7 +153,7 @@ class Interpreter:
 
     def setglobal(self, inst):
         a, bx = self.getabx(inst)
-        global_name = self.constants['*toplevel*'][bx]
+        global_name = self.constants[bx]
         self.globals[global_name] = self.registers[a]
 
     def setupval(self, inst):
@@ -312,7 +305,7 @@ class Interpreter:
         a, b, _ = self.getabc(inst)
         function = self.registers[a]
         args = self.registers[a+1:a+b]
-        self.freturn(self.call(function, args))
+        self.freturn(self.fcall(function, args))
 
     def return_(self, inst):
         a, b, _ = self.getabc(inst)
@@ -362,7 +355,7 @@ class Interpreter:
         else:
             if c == 0:
                 # cast next instruction as int and let that be c
-                c = self.curr_insts[self.pc+1]
+                c = self.instructions[self.pc+1]
                 self.pc += 1 # and skip next instruction as its not an instruction
             for i in xrange(1, b + 1):
                 table[(c-1) * FIELDS_PER_FLUSH + i] = self.registers[a + i]
@@ -398,7 +391,7 @@ class Interpreter:
 
     def rk(self, o):
         if o & 256:
-            return self.constants['*toplevel*'][o-256]
+            return self.constants[o-256]
         else:
             return self.registers[o] if o < len(self.registers) else None
 
@@ -413,7 +406,7 @@ def main():
     bytecode = bcfile.read()
     lua_bytecode = parser.LuaBytecode(bytecode)
     interpreter = Interpreter(lua_bytecode, sys.argv[1:])
-    interpreter.run()
+    interpreter.run(interpreter.top_level_func)
 
 if __name__ == '__main__':
     main()
