@@ -74,7 +74,6 @@ class Interpreter:
     def __init__(self, lua_object, arg):
         self.globals = LuaTable(hash=lua_globals)
         self.globals['arg'] = LuaTable(array=arg[1:], hash={0: arg[0]})
-        self.registers = [None]
         self.top_level_func = lua_object.top_level_func
         self.op_functions = \
             [self.move, self.loadk, self.loadbool, self.loadnil,
@@ -90,6 +89,7 @@ class Interpreter:
     def run(self, function):
         self.constants = function.constants
         self.instructions = function.instructions
+        self.registers = [None for _ in xrange(function.max_stack_size)]
         self.pc = 0 # program counter
         while self.pc < len(self.instructions):
             inst_bytestring = self.instructions[self.pc]
@@ -119,22 +119,22 @@ class Interpreter:
 
     def move(self, inst):
         a, b, _ = self.getabc(inst)
-        self.register_put(a, self.registers[b])
+        self.registers[a] = self.registers[b]
 
     def loadk(self, inst):
         a, bx = self.getabx(inst)
-        self.register_put(a, self.constants[bx])
+        self.registers[a] = self.constants[bx]
         
     def loadbool(self, inst):
         a, b, c = self.getabc(inst)
-        self.register_put(a, True if b else False)
+        self.registers[a] = True if b else False
         if c:
             self.pc += 1
 
     def loadnil(self, inst):
         a, b, _ = self.getabc(inst)
         for i in xrange(a, b+1):
-            self.register_put(i, None)
+            self.registers[i] = None
 
     def getupval(self, inst):
         a, b, _ = self.getabc(inst)
@@ -143,13 +143,13 @@ class Interpreter:
     def getglobal(self, inst):
         a, bx = self.getabx(inst)
         global_name = self.constants[bx]
-        self.register_put(a, self.globals[global_name])
+        self.registers[a] = self.globals[global_name]
 
     def gettable(self, inst):
         a, b, c = self.getabc(inst)
         table = self.registers[b]
         index = self.rk(c)
-        self.register_put(a, table[index])
+        self.registers[a] = table[index]
 
     def setglobal(self, inst):
         a, bx = self.getabx(inst)
@@ -176,68 +176,55 @@ class Interpreter:
             array_size = b_x if b_e == 0 else (10 + b_x) * (2 ** (b_e - 1))
             hash_size  = c_x if c_e == 0 else (10 + c_x) * (2 ** (c_e - 1))
             array = [None for _ in xrange(array_size)]
-            self.register_put(a, LuaTable(array=array, hash={}))
+            self.registers[a] = LuaTable(array=array, hash={})
         else:
-            self.register_put(a, LuaTable(array=[], hash={}))
+            self.registers[a] = LuaTable(array=[], hash={})
 
     def self_(self, inst):
         a, b, c = self.getabc(inst)
         table = self.registers[b]
-        self.register_put(a + 1, b)
-        self.register_put(a, table[self.rk(c)]);
+        self.registers[a + 1] = b
+        self.registers[a] = table[self.rk(c)]
         
     def add(self, inst):
         a, b, c = self.getabc(inst)
-        rkb = self.rk(b)
-        rkc = self.rk(c)
-        self.register_put(a, rkb + rkc)
+        self.registers[a] = self.rk(b) + self.rk(c)
 
     def sub(self, inst):
         a, b, c = self.getabc(inst)
-        rkb = self.rk(b)
-        rkc = self.rk(c)
-        self.register_put(a, rkb - rkc)
+        self.registers[a] = self.rk(b) - self.rk(c)
 
     def mul(self, inst):
         a, b, c = self.getabc(inst)
-        rkb = self.rk(b)
-        rkc = self.rk(c)
-        self.register_put(a, rkb * rkc)
+        self.registers[a] = self.rk(b) * self.rk(c)
 
     def div(self, inst):
         a, b, c, = self.getabc(inst)
-        rkb = self.rk(b)
-        rkc = self.rk(c)
-        self.register_put(a, rkb / rkc)
+        self.registers[a] = self.rk(b) / self.rk(c)
 
     def mod(self, inst):
         a, b, c = self.getabc(inst)
-        rkb = self.rk(b)
-        rkc = self.rk(c)
-        self.register_put(a, rkb % rkc)
+        self.registers[a] = self.rk(b) % self.rk(c)
 
     def pow(self, inst):
         a, b, c = self.getabc(inst)
-        rkb = self.rk(b)
-        rkc = self.rk(c)
-        self.register_put(a, rkb ** rkc)
+        self.registers[a] = self.rk(b) ** self.rk(c)
 
     def unm(self, inst):
         a, b, _ = self.getabc(inst)
-        self.register_put(a, -self.registers[b])
+        self.registers[a] = -self.registers[b]
 
     def not_(self, inst):
         a, b, _ = self.getabc(inst)
-        self.register_put(a, not self.registers[b])
+        self.registers[a] = not self.registers[b]
 
     def len(self, inst):
         a, b, _ = self.getabc(inst)
-        self.register_put(a, len(self.registers[b]))
+        self.registers[a] = len(self.registers[b])
 
     def concat(self, inst):
         a, b, c = self.getabc(inst)
-        newstr = ''.join([self.registers[i] for i in xrange(b, c+1)])
-        self.register_put(a, newstr)
+        self.registers[a] = ''.join([self.registers[i] for i in xrange(b, c+1)])
 
     def jmp(self, inst):
         _, sbx = self.getasbx(inst)
@@ -276,7 +263,7 @@ class Interpreter:
         if rb == c:
             self.pc += 1
         else:
-            self.register_put(a, rb)
+            self.registers[a] = rb
 
     def call(self, inst):
         a, b, c = self.getabc(inst)
@@ -294,11 +281,11 @@ class Interpreter:
         if c == 0:
             # save return results into registers staring from r[a]
             for i in xrange(len(results)):
-                self.register_put(a+i, results[i])
+                self.registers[a + i] = results[i]
         elif c == 2:
             # save c-1 return results starting from r[a]
             for i in xrange(c-1):
-                self.register_put(a+i, results[i])
+                self.registers[a + i] = results[i]
 
 
     def tailcall(self, inst):
@@ -326,7 +313,7 @@ class Interpreter:
         ra2 = self.registers[a+2]
         if (ra2 > 0 and ra <= ra1) or (ra2 < 0 and ra >= ra1):
             self.pc += sbx
-            self.register_put(a+3, ra)
+            self.registers[a + 3] = ra
 
     def forprep(self, inst):
         a, sbx = self.getasbx(inst)
@@ -339,7 +326,7 @@ class Interpreter:
         state = self.registers[a+1]
         index = self.registers[a+2] if len(self.registers) > a+2 else None
         for i in xrange(a + 3, a + c + 3):
-            self.register_put(i, self.fcall(iter_func, [state, index]))
+            self.registers[i] = self.fcall(iter_func, [state, index])
         if self.registers[a+3] is not None:
             self.registers[a+2] = self.registers[a+3]
         else:
@@ -375,12 +362,7 @@ class Interpreter:
             pass
         else:
             for i in xrange(a, a + b):
-                self.register_put(i, None)
-
-    def register_put(self, i, item):
-        while i >= len(self.registers):
-            self.registers.append(None)
-        self.registers[i] = item
+                self.registers[i] = None
 
     def fcall(self, function, args):
         function(args)
