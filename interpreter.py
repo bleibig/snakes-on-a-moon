@@ -79,6 +79,7 @@ class Interpreter:
         self.instructions = None
         self.prototypes = None
         self.registers = None
+        self.upvalues = None
         self.pc = None
         self.op_functions = \
             [self.move, self.loadk, self.loadbool, self.loadnil,
@@ -96,6 +97,7 @@ class Interpreter:
         old_instructions = self.instructions
         old_prototypes = self.prototypes
         old_registers = self.registers
+        old_upvalues = self.upvalues
         old_pc = self.pc
         self.constants = function.constants
         self.instructions = function.instructions
@@ -103,6 +105,7 @@ class Interpreter:
         self.registers = args
         while len(self.registers) < function.max_stack_size:
             self.registers.append(None)
+        self.upvalues = function.upv if hasattr(function, 'upv') else None
         self.pc = 0 # program counter
         while self.pc < len(self.instructions):
             inst_bytestring = self.instructions[self.pc]
@@ -114,6 +117,7 @@ class Interpreter:
         self.instructions = old_instructions
         self.prototypes = old_prototypes
         self.registers = old_registers
+        self.upvalues = old_upvalues
         self.pc = old_pc
 
     @staticmethod
@@ -156,7 +160,7 @@ class Interpreter:
 
     def getupval(self, inst):
         a, b, _ = self.getabc(inst)
-        # GETUPVAL NYI
+        self.registers[a] = self.upvalues[b]
 
     def getglobal(self, inst):
         a, bx = self.getabx(inst)
@@ -176,7 +180,7 @@ class Interpreter:
 
     def setupval(self, inst):
         a, b, _ = self.getabc(inst)
-        print 'SETUPVAL NYI'
+        self.upvalues[b] = self.registers[a]
 
     def settable(self, inst):
         a, b, c = self.getabc(inst)
@@ -372,13 +376,15 @@ class Interpreter:
     def closure(self, inst):
         a, bx = self.getabx(inst)
         self.registers[a] = self.prototypes[bx]
-        for i in xrange(1, self.prototypes[bx].num_upvalues + 1):
-            inst_bytestring = self.instructions[self.pc + i]
+        self.prototypes[bx].upv = []
+        for i in xrange(0, self.prototypes[bx].num_upvalues):
+            inst_bytestring = self.instructions[self.pc + i + 1]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             if opcode == 0: # MOVE
                 _, b, _ = self.getabc(inst)
-                # TODO instantiate upvalues
+                # alias this function's upvalue[i] to registers[b]
+                self.prototypes[bx].upv.append(self.registers[b])
             else:
                 assert opcode == 4 # GETUPVAL
                 _, b, _ = self.getabc(inst)
