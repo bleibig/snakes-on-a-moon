@@ -70,6 +70,15 @@ class LuaTable:
     def __len__(self):
         return len(self.array)
 
+class LuaUpvalue:
+    def __init__(self, value, orig_stack, orig_index):
+        """ Holds the upvalue as well as a means to access the original value
+        from the outer function on previous stack frames.
+        """
+        self.value = value
+        self.orig_stack = orig_stack + 1
+        self.orig_index = orig_index
+
 class Interpreter:
     def __init__(self, lua_object, arg):
         self.globals = LuaTable(hash=lua_globals)
@@ -163,7 +172,7 @@ class Interpreter:
 
     def getupval(self, inst):
         a, b, _ = self.getabc(inst)
-        self.registers[a] = self.upvalues[b]
+        self.registers[a] = self.upvalues[b].value
 
     def getglobal(self, inst):
         a, bx = self.getabx(inst)
@@ -183,8 +192,10 @@ class Interpreter:
 
     def setupval(self, inst):
         a, b, _ = self.getabc(inst)
-        self.upvalues[b] = self.registers[a]
+        upv = self.upvalues[b]
+        upv.value = self.registers[a]
         # also need to update the original register
+        self.registers_stack[upv.orig_stack][upv.orig_index] = self.registers[a]
 
     def settable(self, inst):
         a, b, c = self.getabc(inst)
@@ -388,7 +399,10 @@ class Interpreter:
             if opcode == 0: # MOVE
                 _, b, _ = self.getabc(inst)
                 # alias this function's upvalue[i] to registers[b]
-                self.function.prototypes[bx].upv.append(self.registers[b])
+                upvalue = LuaUpvalue(self.registers[b],
+                                     len(self.registers_stack) - 1,
+                                     b)
+                self.function.prototypes[bx].upv.append(upvalue)
             else:
                 assert opcode == 4 # GETUPVAL
                 _, b, _ = self.getabc(inst)
