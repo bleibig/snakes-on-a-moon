@@ -3,7 +3,7 @@
 import struct
 import library
 
-FIELDS_PER_FLUSH = 50
+FIELDS_PER_FLUSH = 50 # for use by setlist
 
 lua_globals = {
     'assert': library.lua_assert,
@@ -75,6 +75,11 @@ class Interpreter:
         self.globals = LuaTable(hash=lua_globals)
         self.globals['arg'] = LuaTable(array=arg[1:], hash={0: arg[0]})
         self.top_level_func = lua_object.top_level_func
+        self.constants = None
+        self.instructions = None
+        self.prototypes = None
+        self.registers = None
+        self.pc = None
         self.op_functions = \
             [self.move, self.loadk, self.loadbool, self.loadnil,
              self.getupval, self.getglobal, self.gettable,
@@ -86,10 +91,18 @@ class Interpreter:
              self.return_, self.forloop, self.forprep, self.tforloop,
              self.setlist, self.close, self.closure, self.vararg]
 
-    def run(self, function):
+    def run(self, function, args):
+        old_constants = self.constants
+        old_instructions = self.instructions
+        old_prototypes = self.prototypes
+        old_registers = self.registers
+        old_pc = self.pc
         self.constants = function.constants
         self.instructions = function.instructions
-        self.registers = [None for _ in xrange(function.max_stack_size)]
+        self.prototypes = function.prototypes
+        self.registers = args
+        while len(self.registers) < function.max_stack_size:
+            self.registers.append(None)
         self.pc = 0 # program counter
         while self.pc < len(self.instructions):
             inst_bytestring = self.instructions[self.pc]
@@ -97,6 +110,11 @@ class Interpreter:
             opcode = inst & 0x0000003f
             self.op_functions[opcode](inst)
             self.pc += 1
+        self.constants = old_constants
+        self.instructions = old_instructions
+        self.prototypes = old_prototypes
+        self.registers = old_registers
+        self.pc = old_pc
 
     @staticmethod
     def getabc(inst):
@@ -138,7 +156,7 @@ class Interpreter:
 
     def getupval(self, inst):
         a, b, _ = self.getabc(inst)
-        print 'GETUPVAL NYI'
+        # GETUPVAL NYI
 
     def getglobal(self, inst):
         a, bx = self.getabx(inst)
@@ -282,7 +300,7 @@ class Interpreter:
             # save return results into registers staring from r[a]
             for i in xrange(len(results)):
                 self.registers[a + i] = results[i]
-        elif c == 2:
+        elif c >= 2:
             # save c-1 return results starting from r[a]
             for i in xrange(c-1):
                 self.registers[a + i] = results[i]
@@ -353,7 +371,19 @@ class Interpreter:
 
     def closure(self, inst):
         a, bx = self.getabx(inst)
-        print 'CLOSURE NYI'
+        self.registers[a] = self.prototypes[bx]
+        for i in xrange(1, self.prototypes[bx].num_upvalues + 1):
+            inst_bytestring = self.instructions[self.pc + i]
+            inst = struct.unpack('I', inst_bytestring)[0]
+            opcode = inst & 0x0000003f
+            if opcode == 0: # MOVE
+                _, b, _ = self.getabc(inst)
+                # TODO instantiate upvalues
+            else:
+                assert opcode == 4 # GETUPVAL
+                _, b, _ = self.getabc(inst)
+                # TODO ditto
+        self.pc += self.prototypes[bx].num_upvalues
 
     def vararg(self, inst):
         a, b, _ = self.getabc(inst)
@@ -365,7 +395,14 @@ class Interpreter:
                 self.registers[i] = None
 
     def fcall(self, function, args):
-        function(args)
+        if hasattr(function, '__call__'):
+            # function is a python function i.e. a native library function
+            # so call it like a python function
+            function(args)
+        else:
+            # otherwise function must be a lua function
+            # so call run() with this function
+            self.run(function, args)
 
     def freturn(self, results):
         # TODO do function return
@@ -388,7 +425,7 @@ def main():
     bytecode = bcfile.read()
     lua_bytecode = parser.LuaBytecode(bytecode)
     interpreter = Interpreter(lua_bytecode, sys.argv[1:])
-    interpreter.run(interpreter.top_level_func)
+    interpreter.run(interpreter.top_level_func, [])
 
 if __name__ == '__main__':
     main()
