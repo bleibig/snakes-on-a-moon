@@ -75,12 +75,14 @@ class Interpreter:
         self.globals = LuaTable(hash=lua_globals)
         self.globals['arg'] = LuaTable(array=arg[1:], hash={0: arg[0]})
         self.top_level_func = lua_object.top_level_func
-        self.constants = None
-        self.instructions = None
-        self.prototypes = None
+        self.function = None
+        self.function_stack = []
         self.registers = None
+        self.registers_stack = []
         self.upvalues = None
+        self.upvalues_stack = []
         self.pc = None
+        self.pc_stack = []
         self.op_functions = \
             [self.move, self.loadk, self.loadbool, self.loadnil,
              self.getupval, self.getglobal, self.gettable,
@@ -93,32 +95,33 @@ class Interpreter:
              self.setlist, self.close, self.closure, self.vararg]
 
     def run(self, function, args):
-        old_constants = self.constants
-        old_instructions = self.instructions
-        old_prototypes = self.prototypes
-        old_registers = self.registers
-        old_upvalues = self.upvalues
-        old_pc = self.pc
-        self.constants = function.constants
-        self.instructions = function.instructions
-        self.prototypes = function.prototypes
+        # push current interpreter data on the stack
+        self.function_stack.append(self.function)
+        self.registers_stack.append(self.registers)
+        self.upvalues_stack.append(self.upvalues)
+        self.pc_stack.append(self.pc)
+
+        # initialize data for current function
+        self.function = function
         self.registers = args
         while len(self.registers) < function.max_stack_size:
             self.registers.append(None)
         self.upvalues = function.upv if hasattr(function, 'upv') else None
         self.pc = 0 # program counter
-        while self.pc < len(self.instructions):
-            inst_bytestring = self.instructions[self.pc]
+
+        # main loop
+        while self.pc < len(self.function.instructions):
+            inst_bytestring = self.function.instructions[self.pc]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             self.op_functions[opcode](inst)
             self.pc += 1
-        self.constants = old_constants
-        self.instructions = old_instructions
-        self.prototypes = old_prototypes
-        self.registers = old_registers
-        self.upvalues = old_upvalues
-        self.pc = old_pc
+
+        # pop previous function data into current interpreter data
+        self.function = self.function_stack.pop()
+        self.registers = self.registers_stack.pop()
+        self.upvalues = self.upvalues_stack.pop()
+        self.pc = self.pc_stack.pop()
 
     @staticmethod
     def getabc(inst):
@@ -145,7 +148,7 @@ class Interpreter:
 
     def loadk(self, inst):
         a, bx = self.getabx(inst)
-        self.registers[a] = self.constants[bx]
+        self.registers[a] = self.function.constants[bx]
         
     def loadbool(self, inst):
         a, b, c = self.getabc(inst)
@@ -164,7 +167,7 @@ class Interpreter:
 
     def getglobal(self, inst):
         a, bx = self.getabx(inst)
-        global_name = self.constants[bx]
+        global_name = self.function.constants[bx]
         self.registers[a] = self.globals[global_name]
 
     def gettable(self, inst):
@@ -175,12 +178,13 @@ class Interpreter:
 
     def setglobal(self, inst):
         a, bx = self.getabx(inst)
-        global_name = self.constants[bx]
+        global_name = self.function.constants[bx]
         self.globals[global_name] = self.registers[a]
 
     def setupval(self, inst):
         a, b, _ = self.getabc(inst)
         self.upvalues[b] = self.registers[a]
+        # also need to update the original register
 
     def settable(self, inst):
         a, b, c = self.getabc(inst)
@@ -364,7 +368,7 @@ class Interpreter:
         else:
             if c == 0:
                 # cast next instruction as int and let that be c
-                c = self.instructions[self.pc+1]
+                c = self.function.instructions[self.pc+1]
                 self.pc += 1 # and skip next instruction as its not an instruction
             for i in xrange(1, b + 1):
                 table[(c-1) * FIELDS_PER_FLUSH + i] = self.registers[a + i]
@@ -375,21 +379,21 @@ class Interpreter:
 
     def closure(self, inst):
         a, bx = self.getabx(inst)
-        self.registers[a] = self.prototypes[bx]
-        self.prototypes[bx].upv = []
-        for i in xrange(0, self.prototypes[bx].num_upvalues):
-            inst_bytestring = self.instructions[self.pc + i + 1]
+        self.registers[a] = self.function.prototypes[bx]
+        self.function.prototypes[bx].upv = []
+        for i in xrange(0, self.function.prototypes[bx].num_upvalues):
+            inst_bytestring = self.function.instructions[self.pc + i + 1]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             if opcode == 0: # MOVE
                 _, b, _ = self.getabc(inst)
                 # alias this function's upvalue[i] to registers[b]
-                self.prototypes[bx].upv.append(self.registers[b])
+                self.function.prototypes[bx].upv.append(self.registers[b])
             else:
                 assert opcode == 4 # GETUPVAL
                 _, b, _ = self.getabc(inst)
                 # TODO ditto
-        self.pc += self.prototypes[bx].num_upvalues
+        self.pc += self.function.prototypes[bx].num_upvalues
 
     def vararg(self, inst):
         a, b, _ = self.getabc(inst)
@@ -404,19 +408,18 @@ class Interpreter:
         if hasattr(function, '__call__'):
             # function is a python function i.e. a native library function
             # so call it like a python function
-            function(args)
+            return function(args)
         else:
             # otherwise function must be a lua function
             # so call run() with this function
-            self.run(function, args)
+            return self.run(function, args)
 
     def freturn(self, results):
-        # TODO do function return
-        pass
+        return results
 
     def rk(self, o):
         if o & 256:
-            return self.constants[o-256]
+            return self.function.constants[o-256]
         else:
             return self.registers[o] if o < len(self.registers) else None
 
