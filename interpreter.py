@@ -442,9 +442,15 @@ def main():
     import sys
     import parser
     if len(sys.argv) < 2:
-        print 'usage: interpreter.py lua-bytecode-file'
+        print 'usage: interpreter.py lua-file'
         exit(1)
-    bcfile = open(sys.argv[1], 'rb') # r = read, b = binary file
+    filename = sys.argv[1]
+    if filename[-4:] == '.lua':
+        # file is a lua script, compile with luac first
+        import subprocess
+        subprocess.check_call(['luac', '-o', filename + 'c', filename])
+        filename += 'c'
+    bcfile = open(filename, 'rb') # r = read, b = binary file
     bytecode = bcfile.read()
     lua_bytecode = parser.LuaBytecode(bytecode)
     interpreter = Interpreter(lua_bytecode, sys.argv[1:])

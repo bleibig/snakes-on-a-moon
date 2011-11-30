@@ -280,9 +280,15 @@ class LuaBytecode:
 def main():
     import sys
     if len(sys.argv) != 2:
-        print 'usage: parser.py lua-bytecode-file'
+        print 'usage: parser.py lua-file'
         exit(1)
-    bcfile = open(sys.argv[1], 'rb') # r = read, b = binary file
+    filename = sys.argv[1]
+    if filename[-4:] == '.lua':
+        # file is a lua script, compile with luac first
+        import subprocess
+        subprocess.check_call(['luac', '-o', filename + 'c', filename])
+        filename += 'c'
+    bcfile = open(filename, 'rb') # r = read, b = binary file
     bytecode = bcfile.read()
     lua_bytecode = LuaBytecode(bytecode)
     print '=== header ==='
