@@ -411,12 +411,11 @@ class Interpreter:
 
     def vararg(self, inst):
         a, b, _ = self.getabc(inst)
-        if b == 0:
-            # TODO
-            pass
-        else:
-            for i in xrange(a, a + b):
-                self.registers[i] = None
+        argtable = self.registers[self.function.num_parameters] \
+            if self.function.is_vararg_flag & 0x2 \
+            else None
+        for i in xrange(a, len(self.registers) if b == 0 else a+b-1):
+            self.registers[i] = argtable[i-a+1] if argtable else None
 
     def fcall(self, function, args):
         if hasattr(function, '__call__'):
@@ -425,7 +424,18 @@ class Interpreter:
             return function(args)
         else:
             # otherwise function must be a lua function
-            # so call run() with this function
+            # truncate args list to match number of parameters
+            if len(args) > function.num_parameters:
+                new_args = args[:function.num_parameters]
+                if function.is_vararg_flag & 0x2:
+                    # put the extra args in an 'arg' table
+                    arg_array = args[function.num_parameters:]
+                    arg_hash = {'n': len(arg_array)}
+                    arg = LuaTable(array=arg_array, hash=arg_hash)
+                    # and set that as the last parameter
+                    new_args.append(arg)
+                args = new_args
+            # and call run() with this function
             return self.run(function, args)
 
     def freturn(self, results):
