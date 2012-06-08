@@ -79,19 +79,23 @@ class LuaUpvalue:
         self.orig_stack = orig_stack + 1
         self.orig_index = orig_index
 
+class Frame:
+    def __init__(self, function, registers, upvalues, pc):
+        self.function = function
+        self.registers = registers
+        self.upvalues = upvalues
+        self.pc = pc
+
 class Interpreter:
     def __init__(self, lua_object, arg):
         self.globals = LuaTable(hash=lua_globals)
         self.globals['arg'] = LuaTable(array=arg[1:], hash={0: arg[0]})
         self.top_level_func = lua_object.top_level_func
         self.function = None
-        self.function_stack = []
         self.registers = None
-        self.registers_stack = []
         self.upvalues = None
-        self.upvalues_stack = []
         self.pc = None
-        self.pc_stack = []
+        self.stack = []
         self.op_functions = \
             [self.move, self.loadk, self.loadbool, self.loadnil,
              self.getupval, self.getglobal, self.gettable,
@@ -105,10 +109,7 @@ class Interpreter:
 
     def run(self, function, args):
         # push current interpreter data on the stack
-        self.function_stack.append(self.function)
-        self.registers_stack.append(self.registers)
-        self.upvalues_stack.append(self.upvalues)
-        self.pc_stack.append(self.pc)
+        self.stack.append(Frame(self.function, self.registers, self.upvalues, self.pc))
 
         # initialize data for current function
         self.function = function
@@ -127,10 +128,11 @@ class Interpreter:
             self.pc += 1
 
         # pop previous function data into current interpreter data
-        self.function = self.function_stack.pop()
-        self.registers = self.registers_stack.pop()
-        self.upvalues = self.upvalues_stack.pop()
-        self.pc = self.pc_stack.pop()
+        last_frame = self.stack.pop();
+        self.function = last_frame.function
+        self.registers = last_frame.registers
+        self.upvalues = last_frame.upvalues
+        self.pc = last_frame.pc
 
     @staticmethod
     def getabc(inst):
