@@ -91,11 +91,8 @@ class Interpreter:
         self.globals = LuaTable(hash=lua_globals)
         self.globals['arg'] = LuaTable(array=arg[1:], hash={0: arg[0]})
         self.top_level_func = lua_object.top_level_func
-        self.function = None
-        self.registers = None
-        self.upvalues = None
-        self.pc = None
-        self.stack = []
+        self.stack = [] # call stack
+        self.done = False
         self.op_functions = \
             [self.move, self.loadk, self.loadbool, self.loadnil,
              self.getupval, self.getglobal, self.gettable,
@@ -107,32 +104,20 @@ class Interpreter:
              self.return_, self.forloop, self.forprep, self.tforloop,
              self.setlist, self.close, self.closure, self.vararg]
 
-    def run(self, function, args):
-        # push current interpreter data on the stack
-        self.stack.append(Frame(self.function, self.registers, self.upvalues, self.pc))
-
+    # runs the top level function
+    def run(self):
         # initialize data for current function
-        self.function = function
-        self.registers = args
-        while len(self.registers) < function.max_stack_size:
-            self.registers.append(None)
-        self.upvalues = function.upv if hasattr(function, 'upv') else None
+        self.function = self.top_level_func
+        self.registers = [None for _ in xrange(self.function.max_stack_size)]
+        self.upvalues = function.upv if hasattr(self.function, 'upv') else None
         self.pc = 0 # program counter
-
         # main loop
-        while self.pc < len(self.function.instructions):
+        while not self.done and self.pc < len(self.function.instructions):
             inst_bytestring = self.function.instructions[self.pc]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             self.op_functions[opcode](inst)
             self.pc += 1
-
-        # pop previous function data into current interpreter data
-        last_frame = self.stack.pop();
-        self.function = last_frame.function
-        self.registers = last_frame.registers
-        self.upvalues = last_frame.upvalues
-        self.pc = last_frame.pc
 
     @staticmethod
     def getabc(inst):
@@ -315,17 +300,23 @@ class Interpreter:
             # there are b-1 parameters
             # so add b-1 parameters from registers to the args list
             args.extend(self.registers[a+1:a+b])
-        # call function, saving return values in a list
+        # call function
         results = self.fcall(function, args)
-        if c == 0:
-            # save return results into registers staring from r[a]
-            for i in xrange(len(results)):
-                self.registers[a + i] = results[i]
-        elif c >= 2:
-            # save c-1 return results starting from r[a]
-            for i in xrange(c-1):
-                self.registers[a + i] = results[i]
-
+        # save results here if it was a library function
+        if hasattr(function, '__call__'):
+            if c == 0:
+                # save return results into registers staring from r[a]
+                for i in xrange(len(results)):
+                    self.registers[a + i] = results[i]
+            elif c >= 2:
+                # save c-1 return results starting from r[a]
+                for i in xrange(c-1):
+                    self.registers[a + i] = results[i]
+        else:
+            # store current a and c operand values into this frame,
+            # the return instruction will use it
+            self.stack[len(self.stack)-1].call_a = a
+            self.stack[len(self.stack)-1].call_c = c
 
     def tailcall(self, inst):
         a, b, _ = self.getabc(inst)
@@ -342,7 +333,27 @@ class Interpreter:
         elif b >= 2:
             # there are b - 1 results starting from r[a]
             results.extend(self.registers[a:b-1])
-        self.freturn(results)
+        # done if the call stack is empty
+        if len(self.stack) == 0:
+            self.done = True
+            return
+        # pop last frame
+        last_frame = self.stack.pop()
+        self.function = last_frame.function
+        self.registers = last_frame.registers
+        self.upvalues = last_frame.upvalues
+        self.pc = last_frame.pc
+        a = last_frame.call_a
+        c = last_frame.call_c
+        if c == 0:
+            # save return results into registers staring from r[a]
+            for i in xrange(len(results)):
+                self.registers[a + i] = results[i]
+        elif c >= 2:
+            # save c-1 return results starting from r[a]
+            for i in xrange(c-1):
+                self.registers[a + i] = results[i]
+
         
     def forloop(self, inst):
         a, sbx = self.getasbx(inst)
@@ -401,10 +412,6 @@ class Interpreter:
             if opcode == 0: # MOVE
                 _, b, _ = self.getabc(inst)
                 # alias this function's upvalue[i] to registers[b]
-                upvalue = LuaUpvalue(self.registers[b],
-                                     len(self.registers_stack) - 1,
-                                     b)
-                self.function.prototypes[bx].upv.append(upvalue)
             else:
                 assert opcode == 4 # GETUPVAL
                 _, b, _ = self.getabc(inst)
@@ -437,11 +444,16 @@ class Interpreter:
                     # and set that as the last parameter
                     new_args.append(arg)
                 args = new_args
-            # and call run() with this function
-            return self.run(function, args)
-
-    def freturn(self, results):
-        return results
+            # push current frame onto stack
+            self.stack.append(Frame(self.function, self.registers,
+                                    self.upvalues, self.pc))
+            # initialize data for current function
+            self.function = function
+            self.registers = args
+            while len(self.registers) < function.max_stack_size:
+                self.registers.append(None)
+            self.upvalues = function.upv if hasattr(function, 'upv') else None
+            self.pc = -1
 
     def rk(self, o):
         if o & 256:
@@ -466,7 +478,7 @@ def main():
     bytecode = bcfile.read()
     lua_bytecode = parser.LuaBytecode(bytecode)
     interpreter = Interpreter(lua_bytecode, sys.argv[1:])
-    interpreter.run(interpreter.top_level_func, [])
+    interpreter.run()
 
 if __name__ == '__main__':
     main()
