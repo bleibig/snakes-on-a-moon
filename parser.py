@@ -101,7 +101,8 @@ class LuaFunction:
                 'upvalues': self.upvalues}
 
     def __str__(self):
-        return pprint.pformat(self.as_dict())
+#        return pprint.pformat(self.as_dict())
+        return 'LuaFunction@{}:{}'.format(self.line_defined, self.last_line_defined)
 
 class LuaBytecode:
     """ Reads a bytestring of an object compiled with luac and parses
