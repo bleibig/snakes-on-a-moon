@@ -1,6 +1,7 @@
 # basic library: holds lua standard library functions and variables
 
 import sys
+from luatypes import *
 
 def lua_assert(v, message=None):
     print 'assert NYI'
@@ -14,7 +15,7 @@ def lua_dofile(filename):
 def lua_error(message, level=None):
     print 'error NYI'
 
-_G = { }
+_G = LuaTable(hash={ })
 _G['_G'] = _G
 
 def lua_getfenv(f=None):
@@ -143,14 +144,14 @@ def coroutine_wrap(f):
 def coroutine_yield(f):
     print 'coroutine.yield NYI'
 
-coroutine = {
+coroutine = LuaTable(hash={
     'create': coroutine_create,
     'resume': coroutine_resume,
     'running': coroutine_running,
     'status': coroutine_status,
     'wrap': coroutine_wrap,
     'yield': coroutine_yield,
-    }
+    })
 
 # module library
 
@@ -162,21 +163,21 @@ def lua_require(modname):
 
 package_cpath = ''
 
-package_loaded = { }
+package_loaded = LuaTable()
 
-package_loaders = { }
+package_loaders = LuaTable()
 
 def package_loadlib(libname, funcname):
     print 'package.loadlib NYI'
 
 package_path = ''
 
-package_preload = { }
+package_preload = LuaTable()
 
 def package_seeall(module):
     print 'package.seeall NYI'
 
-module = {
+module = LuaTable(hash={
     'cpath': package_cpath,
     'loaded': package_loaded,
     'loaders': package_loaders,
@@ -184,7 +185,7 @@ module = {
     'path': package_path,
     'preload': package_preload,
     'seeall': package_seeall,
-    }
+    })
 
 # string library
 
@@ -230,7 +231,7 @@ def string_sub(s, i, j=None):
 def string_upper(s):
     print 'string.upper NYI'
 
-string = {
+string = LuaTable(hash={
     'byte': string_byte,
     'char': string_char,
     'dump': string_dump,
@@ -245,7 +246,7 @@ string = {
     'reverse': string_reverse,
     'sub': string_sub,
     'upper': string_upper,
-    }
+    })
 
 # table library
 
@@ -264,13 +265,13 @@ def table_remove(table, pos):
 def table_sort(table, comp):
     print 'table.sort NYI'
 
-table = {
+table = LuaTable(hash={
     'concat': table_concat,
     'insert': table_insert,
     'maxn': table_maxn,
     'remove': table_remove,
     'sort': table_sort,
-    }
+    })
 
 # math library
 
@@ -362,7 +363,7 @@ def math_tan(x):
 def math_tanh(x):
     print 'math.tanh NYI'
 
-math = {
+math = LuaTable(hash={
     'abs': math_abs,
     'acos': math_acos,
     'asin': math_asin,
@@ -393,7 +394,7 @@ math = {
     'sqrt': math_sqrt,
     'tan': math_tan,
     'tanh': math_tanh,
-    }
+    })
 
 # io library
 
@@ -441,7 +442,7 @@ def io_type(obj):
 def io_write(args=None):
     file_write(io_output(), args)
 
-io = {
+io = LuaTable(hash={
     'close': io_close,
     'flush': io_flush,
     'input': io_input,
@@ -453,7 +454,7 @@ io = {
     'tmpfile': io_tmpfile,
     'type': io_type,
     'write': io_write
-    }
+    })
 
 # file library
 
@@ -484,7 +485,7 @@ def file_write(file_obj, args=None):
         for arg in args:
             file_obj.write(arg)
 
-file_ = {
+file_ = LuaTable(hash={
     'close': file_close,
     'flush': file_flush,
     'lines': file_lines,
@@ -492,7 +493,7 @@ file_ = {
     'seek': file_seek,
     'setvbuf': file_setvbuf,
     'write': file_write 
-    }
+    })
 
 # os library
 
@@ -529,7 +530,7 @@ def os_time(table=None):
 def os_tmpname():
     print 'os.tmpname NYI'
 
-os = {
+os = LuaTable(hash={
     'clock': os_clock,
     'date': os_date,
     'difftime': os_difftime,
@@ -541,7 +542,7 @@ os = {
     'setlocale': os_setlocale,
     'time': os_time,
     'tmpname': os_tmpname,
-    }
+    })
 
 # debug library
 
@@ -587,7 +588,7 @@ def debug_setupvalue(func, up, value):
 def debug_traceback(thread=None, message=None, level=None):
     print 'debug.traceback NYI'
 
-debug = {
+debug = LuaTable(hash={
     'debug': debug_debug,
     'getfenv': debug_getfenv,
     'gethook': debug_gethook,
@@ -602,4 +603,4 @@ debug = {
     'setmetatable': debug_setmetatable,
     'setupvalue': debug_setupvalue,
     'traceback': debug_traceback,
-    }
+    })
