@@ -288,7 +288,7 @@ class Interpreter:
         args = []
         if b == 0:
             # parameters are self.registers[a+1] to top of stack
-            args.extend(self.registers[a+1:])
+            args.extend(self.registers[a+1:-1])
         elif b >= 2:
             # there are b-1 parameters
             # so add b-1 parameters from registers to the args list
@@ -331,7 +331,7 @@ class Interpreter:
             results.extend(self.registers[a:])
         elif b >= 2:
             # there are b - 1 results starting from r[a]
-            results.extend(self.registers[a:b-1])
+            results.extend(self.registers[a:b])
         # done if the call stack is empty
         if len(self.stack) == 0:
             self.done = True
@@ -342,16 +342,16 @@ class Interpreter:
         self.registers = last_frame.registers
         self.upvalues = last_frame.upvalues
         self.pc = last_frame.pc
-        a = last_frame.call_a
-        c = last_frame.call_c
-        if c == 0:
+        call_a = last_frame.call_a
+        call_c = last_frame.call_c
+        if call_c == 0:
             # save return results into registers staring from r[a]
             for i in xrange(len(results)):
-                self.registers[a + i] = results[i]
-        elif c >= 2:
+                self.registers[call_a + i] = results[i]
+        elif call_c >= 2:
             # save c-1 return results starting from r[a]
-            for i in xrange(c-1):
-                self.registers[a + i] = results[i]
+            for i in xrange(call_c-1):
+                self.registers[call_a + i] = results[i]
         self.trace('RETURN', [a, b], [], True)
         
     def forloop(self, inst):
