@@ -24,3 +24,7 @@ class LuaTable:
 
     def __len__(self):
         return len(self.array)
+
+class LuaValue:
+    def __init__(self, value):
+        self.value = value

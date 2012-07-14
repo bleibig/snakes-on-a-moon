@@ -74,8 +74,8 @@ class Interpreter:
     def run(self):
         # initialize data for current function
         self.function = self.top_level_func
-        self.registers = [None for _ in xrange(self.function.max_stack_size)]
-        self.upvalues = function.upv if hasattr(self.function, 'upv') else None
+        self.registers = [LuaValue(None) for _ in xrange(self.function.max_stack_size)]
+        self.upvalues = function.upv if hasattr(self.function, 'upv') else []
         self.pc = 0 # program counter
         # main loop
         while not self.done and self.pc < len(self.function.instructions):
@@ -84,6 +84,14 @@ class Interpreter:
             opcode = inst & 0x0000003f
             self.op_functions[opcode](inst)
             self.pc += 1
+            # LuaValue instances must only exist in the registers and
+            # upvalues lists, and nowhere else.
+            for reg in self.registers:
+                assert isinstance(reg, LuaValue)
+            for upv in self.upvalues:
+                assert isinstance(upv, LuaValue)
+            for g in self.globals:
+                assert not isinstance(g, LuaValue)
 
     @staticmethod
     def getabc(inst):
@@ -106,17 +114,17 @@ class Interpreter:
 
     def move(self, inst):
         a, b, _ = self.getabc(inst)
-        self.registers[a] = self.registers[b]
+        self.registers[a].value = self.registers[b].value
         self.trace('MOVE', [a, b], [a])
 
     def loadk(self, inst):
         a, bx = self.getabx(inst)
-        self.registers[a] = self.function.constants[bx]
+        self.registers[a].value = self.function.constants[bx]
         self.trace('LOADK', [a, bx], [a])
         
     def loadbool(self, inst):
         a, b, c = self.getabc(inst)
-        self.registers[a] = True if b else False
+        self.registers[a].value = True if b else False
         if c:
             self.pc += 1
         self.trace('LOADBOOL', [a, b, c], [a])
@@ -124,43 +132,41 @@ class Interpreter:
     def loadnil(self, inst):
         a, b, _ = self.getabc(inst)
         for i in xrange(a, b+1):
-            self.registers[i] = None
+            self.registers[i].value = None
         self.trace('LOADNIL', [a, b], range(a, b+1))
 
     def getupval(self, inst):
         a, b, _ = self.getabc(inst)
-        self.registers[a] = self.upvalues[b].value
+        self.registers[a] = self.upvalues[b]
         self.trace('GETUPVAL', [a, b], [a])
 
     def getglobal(self, inst):
         a, bx = self.getabx(inst)
         global_name = self.function.constants[bx]
-        self.registers[a] = self.globals[global_name]
+        self.registers[a].value = self.globals[global_name]
         self.trace('GETGLOBAL', [a, bx], [a])
 
     def gettable(self, inst):
         a, b, c = self.getabc(inst)
-        table = self.registers[b]
+        table = self.registers[b].value
         index = self.rk(c)
-        self.registers[a] = table[index]
+        self.registers[a].value = table[index]
         self.trace('GETTABLE', [a, b, c], [a])
 
     def setglobal(self, inst):
         a, bx = self.getabx(inst)
         global_name = self.function.constants[bx]
-        self.globals[global_name] = self.registers[a]
+        self.globals[global_name] = self.registers[a].value
         self.trace('SETGLOBAL', [a, bx], [])
 
     def setupval(self, inst):
         a, b, _ = self.getabc(inst)
-        upv = self.upvalues[b]
-        upv.value = self.registers[a]
-        # TODO also need to update the original register
+        self.upvalues[b] = self.registers[a]
         self.trace('SETUPVAL', [a, b], [])
 
     def settable(self, inst):
         a, b, c = self.getabc(inst)
-        table = self.registers[a]
+        table = self.registers[a].value
         index = self.rk(b)
         table[index] = self.rk(c)
         self.trace('SETTABLE', [a, b, c], [])
@@ -182,59 +188,59 @@ class Interpreter:
 
     def self_(self, inst):
         a, b, c = self.getabc(inst)
-        table = self.registers[b]
-        self.registers[a + 1] = b
-        self.registers[a] = table[self.rk(c)]
+        table = self.registers[b].value
+        self.registers[a+1].value = b
+        self.registers[a].value = table[self.rk(c)]
         self.trace('SELF', [a, b, c], [a+1, a])
         
     def add(self, inst):
         a, b, c = self.getabc(inst)
-        self.registers[a] = self.rk(b) + self.rk(c)
+        self.registers[a].value = self.rk(b) + self.rk(c)
         self.trace('ADD', [a, b, c], [a])
 
     def sub(self, inst):
         a, b, c = self.getabc(inst)
-        self.registers[a] = self.rk(b) - self.rk(c)
+        self.registers[a].value = self.rk(b) - self.rk(c)
         self.trace('SUB', [a, b, c], [a])
 
     def mul(self, inst):
         a, b, c = self.getabc(inst)
-        self.registers[a] = self.rk(b) * self.rk(c)
+        self.registers[a].value = self.rk(b) * self.rk(c)
         self.trace('MUL', [a, b, c], [a])
 
     def div(self, inst):
         a, b, c, = self.getabc(inst)
-        self.registers[a] = self.rk(b) / self.rk(c)
+        self.registers[a].value = self.rk(b) / self.rk(c)
         self.trace('DIV', [a, b, c], [a])
 
     def mod(self, inst):
         a, b, c = self.getabc(inst)
-        self.registers[a] = self.rk(b) % self.rk(c)
+        self.registers[a].value = self.rk(b) % self.rk(c)
         self.trace('MOD', [a, b, c], [a])
 
     def pow(self, inst):
         a, b, c = self.getabc(inst)
-        self.registers[a] = self.rk(b) ** self.rk(c)
+        self.registers[a].value = self.rk(b) ** self.rk(c)
         self.trace('POW', [a, b, c], [a])
 
     def unm(self, inst):
         a, b, _ = self.getabc(inst)
-        self.registers[a] = -self.registers[b]
+        self.registers[a].value = -self.registers[b].value
         self.trace('UNM', [a, b], [a])
 
     def not_(self, inst):
         a, b, _ = self.getabc(inst)
-        self.registers[a] = not self.registers[b]
+        self.registers[a].value = not self.registers[b].value
         self.trace('NOT', [a, b], [a])
 
     def len(self, inst):
         a, b, _ = self.getabc(inst)
-        self.registers[a] = len(self.registers[b])
+        self.registers[a].value = len(self.registers[b].value)
         self.trace('LEN', [a, b], [a])
 
     def concat(self, inst):
         a, b, c = self.getabc(inst)
-        self.registers[a] = ''.join([self.registers[i] for i in xrange(b, c+1)])
+        self.registers[a].value = ''.join([self.registers[i].value for i in xrange(b, c+1)])
         self.trace('CONCAT', [a, b, c], [a])
 
     def jmp(self, inst):
@@ -268,31 +274,29 @@ class Interpreter:
 
     def test(self, inst):
         a, _, c = self.getabc(inst)
-        ra = self.registers[a] if a < len(self.registers) else None
-        if ra == c:
+        if self.registers[a].value == c:
             self.pc += 1
         self.trace('TEST', [a, c], [])
 
     def testset(self, inst):
         a, b, c = self.getabc(inst)
-        rb = self.registers[b] if b < len(self.registers) else None
-        if rb == c:
+        if self.registers[b].value == c:
             self.pc += 1
         else:
-            self.registers[a] = rb
+            self.registers[a].value = self.registers[b].value
         self.trace('TESTSET', [a, b, c], [a] if rb == c else [])
 
     def call(self, inst):
         a, b, c = self.getabc(inst)
-        function = self.registers[a]
+        function = self.registers[a].value
         args = []
         if b == 0:
             # parameters are self.registers[a+1] to top of stack
-            args.extend(self.registers[a+1:-1])
+            args.extend([r.value for r in self.registers[a+1:-1]])
         elif b >= 2:
             # there are b-1 parameters
             # so add b-1 parameters from registers to the args list
-            args.extend(self.registers[a+1:a+b])
+            args.extend([r.value for r in self.registers[a+1:a+b]])
         # call function
         results = self.fcall(function, args)
         # save results here if it was a library function
@@ -308,18 +312,18 @@ class Interpreter:
                 # save return results into registers staring from r[a]
                 modified_regs = range(a, len(results))
                 for i in xrange(len(results)):
-                    self.registers[a + i] = results[i]
+                    self.registers[a+i].value = results[i]
             elif c >= 2:
                 # save c-1 return results starting from r[a]
                 modified_regs = range(a, c-1)
                 for i in xrange(c-1):
-                    self.registers[a + i] = results[i]
+                    self.registers[a+i].value = results[i]
         self.trace('CALL', [a, b, c], modified_regs, is_lua_function)
 
     def tailcall(self, inst):
         a, b, _ = self.getabc(inst)
-        function = self.registers[a]
-        args = self.registers[a+1:a+b]
+        function = self.registers[a].value
+        args = [r.value for r in self.registers[a+1:a+b]]
         self.freturn(self.fcall(function, args))
         self.trace('TAILCALL', [a, b], [])
 
@@ -328,10 +332,10 @@ class Interpreter:
         results = []
         if b == 0:
             # results are in registers r[a] onwards
-            results.extend(self.registers[a:])
+            results.extend([r.value for r in self.registers[a:]])
         elif b >= 2:
             # there are b - 1 results starting from r[a]
-            results.extend(self.registers[a:b])
+            results.extend([r.value for r in self.registers[a:b+1]])
         # done if the call stack is empty
         if len(self.stack) == 0:
             self.done = True
@@ -347,43 +351,43 @@ class Interpreter:
         if call_c == 0:
             # save return results into registers staring from r[a]
             for i in xrange(len(results)):
-                self.registers[call_a + i] = results[i]
+                self.registers[call_a+i].value = results[i]
         elif call_c >= 2:
             # save c-1 return results starting from r[a]
             for i in xrange(call_c-1):
-                self.registers[call_a + i] = results[i]
+                self.registers[call_a+i].value = results[i]
         self.trace('RETURN', [a, b], [], True)
         
     def forloop(self, inst):
         a, sbx = self.getasbx(inst)
-        self.registers[a] += self.registers[a+2]
-        ra = self.registers[a]
-        ra1 = self.registers[a+1]
-        ra2 = self.registers[a+2]
+        self.registers[a].value += self.registers[a+2].value
+        ra = self.registers[a].value
+        ra1 = self.registers[a+1].value
+        ra2 = self.registers[a+2].value
         do_loop = False
         if (ra2 > 0 and ra <= ra1) or (ra2 < 0 and ra >= ra1):
             do_loop = True
             self.pc += sbx
-            self.registers[a + 3] = ra
+            self.registers[a+3].value = ra
         self.trace('FORLOOP', [a, sbx], [a+3] if do_loop else [])
 
     def forprep(self, inst):
         a, sbx = self.getasbx(inst)
-        self.registers[a] -= self.registers[a+2]
+        self.registers[a].value -= self.registers[a+2].value
         self.pc += sbx
         self.trace('FORPREP', [a, sbx], [a])
 
     def tforloop(self, inst):
         a, _, c = self.getabc(inst)
-        iter_func = self.registers[a]
-        state = self.registers[a+1]
-        index = self.registers[a+2] if len(self.registers) > a+2 else None
+        iter_func = self.registers[a].value
+        state = self.registers[a+1].value
+        index = self.registers[a+2].value
         modified_regs = []
-        for i in xrange(a + 3, a + c + 3):
-            self.registers[i] = self.fcall(iter_func, [state, index])
+        for i in xrange(a+3, a+c+3):
+            self.registers[i].value = self.fcall(iter_func, [state, index])
             modified_regs.append(i)
-        if self.registers[a+3] is not None:
-            self.registers[a+2] = self.registers[a+3]
+        if self.registers[a+3].value is not None:
+            self.registers[a+2].value = self.registers[a+3].value
             modified_regs.append(a+2)
         else:
             self.pc += 1
@@ -391,18 +395,18 @@ class Interpreter:
 
     def setlist(self, inst):
         a, b, c = self.getabc(inst)
-        table = self.registers[a]
+        table = self.registers[a].value
         if b == 0:
             # set table from elements from r[a+1] to top of stack
             for i in xrange(1, len(self.registers[(a+1):])):
-                table[(c-1) * FIELDS_PER_FLUSH + i] = self.registers[a + i]
+                table[(c-1)*FIELDS_PER_FLUSH+i] = self.registers[a+i].value
         else:
             if c == 0:
                 # cast next instruction as int and let that be c
                 c = self.function.instructions[self.pc+1]
                 self.pc += 1 # and skip next instruction as its not an instruction
-            for i in xrange(1, b + 1):
-                table[(c-1) * FIELDS_PER_FLUSH + i] = self.registers[a + i]
+            for i in xrange(1, b+1):
+                table[(c-1)*FIELDS_PER_FLUSH+i] = self.registers[a+i].value
         self.trace('SETLIST', [a, b, c], [])
 
     def close(self, inst):
@@ -412,31 +416,34 @@ class Interpreter:
 
     def closure(self, inst):
         a, bx = self.getabx(inst)
-        self.registers[a] = self.function.prototypes[bx]
+        closure_func = self.function.prototypes[bx]
+        self.registers[a].value = closure_func
         self.function.prototypes[bx].upv = []
-        for i in xrange(0, self.function.prototypes[bx].num_upvalues):
+        for i in xrange(0, closure_func.num_upvalues):
             inst_bytestring = self.function.instructions[self.pc + i + 1]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             if opcode == 0: # MOVE
                 _, b, _ = self.getabc(inst)
                 # alias this function's upvalue[i] to registers[b]
+                closure_func.upvalues[i] = self.registers[b]
             else:
                 assert opcode == 4 # GETUPVAL
                 _, b, _ = self.getabc(inst)
-                # TODO ditto
-        self.pc += self.function.prototypes[bx].num_upvalues
+                # alias this function's upvalue[i] to upvalues[b]
+                closure_func.upvalues[i] = self.upvalues[b]
+        self.pc += closure_func.num_upvalues
         self.trace('CLOSURE', [a, bx], [a])
 
     def vararg(self, inst):
         a, b, _ = self.getabc(inst)
-        argtable = self.registers[self.function.num_parameters] \
+        argtable = self.registers[self.function.num_parameters].value \
             if self.function.is_vararg_flag & 0x2 \
             else None
         modified_regs = []
         for i in xrange(a, len(self.registers) if b == 0 else a+b-1):
             modified_regs.append(i)
-            self.registers[i] = argtable[i-a+1] if argtable else None
+            self.registers[i].value = argtable[i-a+1] if argtable else None
         self.trace('VARARG', [a, b], modified_regs)
 
     def fcall(self, function, args):
@@ -462,17 +469,18 @@ class Interpreter:
                                     self.upvalues, self.pc))
             # initialize data for current function
             self.function = function
-            self.registers = args
+            self.registers = [LuaValue(arg) for arg in args]
             while len(self.registers) < function.max_stack_size:
-                self.registers.append(None)
-            self.upvalues = function.upv if hasattr(function, 'upv') else None
+                self.registers.append(LuaValue(None))
+            self.upvalues = function.upvalues
             self.pc = -1
 
     def rk(self, o):
+        # returns unwrapped value
         if o & 256:
             return self.function.constants[o-256]
         else:
-            return self.registers[o] if o < len(self.registers) else None
+            return self.registers[o].value
 
     def trace(self, instruction, operands, registers, print_hr=False):
         """ Print trace of an instruction, showing what instruction
@@ -494,7 +502,8 @@ class Interpreter:
             indent = indent[2:]
         elif instruction == 'RETURN':
             indent = '  ' + indent
-        regstr = ' '.join(['r[{}]={}'.format(x, self.registers[x]) for x in registers])
+        regstr = ' '.join(['r[{}]={}'.format(
+                    x, self.registers[x].value) for x in registers])
         op0 = operands[0] if len(operands) > 0 else ''
         op1 = operands[1] if len(operands) > 1 else ''
         op2 = operands[2] if len(operands) > 2 else ''
