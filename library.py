@@ -481,9 +481,13 @@ def file_setvbuf(file_obj, mode, size=None):
     print 'file.setvbuf NYI'
 
 def file_write(file_obj, args=None):
-    if args:
-        for arg in args:
-            file_obj.write(arg)
+    for arg in args:
+        if isinstance(arg, float):
+            if arg == int(arg):
+                arg = str(int(arg))
+            else:
+                arg = str(arg)
+        file_obj.write(arg)
 
 file_ = LuaTable(hash={
     'close': file_close,
