@@ -324,7 +324,12 @@ class Interpreter:
         a, b, _ = self.getabc(inst)
         function = self.registers[a].value
         args = [r.value for r in self.registers[a+1:a+b]]
-        self.freturn(self.fcall(function, args))
+        self.function = function
+        self.registers = [LuaValue(arg) for arg in args]
+        while len(self.registers) < function.max_stack_size:
+            self.registers.append(LuaValue(None))
+        self.upvalues = function.upvalues
+        self.pc = -1
         self.trace('TAILCALL', [a, b], [])
 
     def return_(self, inst):
