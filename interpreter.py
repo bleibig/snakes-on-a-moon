@@ -292,7 +292,7 @@ class Interpreter:
         args = []
         if b == 0:
             # parameters are self.registers[a+1] to top of stack
-            args.extend([r.value for r in self.registers[a+1:]])
+            args.extend([r.value for r in self.registers[a+1:-1]])
         elif b >= 2:
             # there are b-1 parameters
             # so add b-1 parameters from registers to the args list
@@ -340,7 +340,7 @@ class Interpreter:
             results.extend([r.value for r in self.registers[a:]])
         elif b >= 2:
             # there are b - 1 results starting from r[a]
-            results.extend([r.value for r in self.registers[a:b+1]])
+            results.extend([r.value for r in self.registers[a:a+b-1]])
         # close all open variables
         for reg in self.registers[a:]:
             for (cl, i) in reg.referencing_closures:
@@ -512,7 +512,7 @@ class Interpreter:
         if not self.print_trace:
             return
         indent = ' ' * len(self.stack) * 2
-        if instruction == 'CALL':
+        if instruction == 'CALL' and print_hr:
             indent = indent[2:]
         elif instruction == 'RETURN':
             indent = '  ' + indent

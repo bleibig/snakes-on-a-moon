@@ -1,6 +1,8 @@
 # basic library: holds lua standard library functions and variables
 
 import sys
+import math
+import random
 from luatypes import *
 
 def lua_assert(v, message=None):
@@ -201,8 +203,10 @@ def string_dump(function):
 def string_find(s, pattern, init=None, plain=None):
     print 'string.find NYI'
 
-def string_format(formatstring, args=None):
-    print 'string.format NYI'
+def string_format(args):
+    formatstring = args[0]
+    result = formatstring % tuple(args[1:])
+    return [result]
 
 def string_gmatch(s, pattern):
     print 'string.gmatch NYI'
@@ -275,93 +279,131 @@ table = LuaTable(hash={
 
 # math library
 
-def math_abs(x):
-    print 'math.abs NYI'
+def math_abs(args):
+    x = args[0]
+    return [abs(x)]
 
-def math_acos(x):
-    print 'math.acos NYI'
+def math_acos(args):
+    x = args[0]
+    return [math.acos(x)]
 
-def math_asin(x):
-    print 'math.asin NYI'
+def math_asin(args):
+    x = args[0]
+    return [math.asin(x)]
 
-def math_atan(x):
-    print 'math.atan NYI'
+def math_atan(args):
+    x = args[0]
+    return [math.atan(x)]
 
 def math_atan2(y, x):
-    print 'math.atan2 NYI'
+    x, y = args[0], args[1]
+    return [math.atan2(y, x)]
 
-def math_ceil(x):
-    print 'math.ceil NYI'
+def math_ceil(args):
+    x = args[0]
+    return [math.ceil(x)]
 
-def math_cos(x):
-    print 'math.cos NYI'
+def math_cos(args):
+    x = args[0]
+    return [math.cos(x)]
 
-def math_cosh(x):
-    print 'math.cosh NYI'
+def math_cosh(args):
+    x = args[0]
+    return [math.cosh(x)]
 
-def math_deg(x):
-    print 'math.deg NYI'
+def math_deg(args):
+    x = args[0]
+    return [math.degrees(x)]
 
-def math_exp(x):
-    print 'math.exp NYI'
+def math_exp(args):
+    x = args[0]
+    return [math.exp(x)]
 
-def math_floor(x):
-    print 'math.floor NYI'
+def math_floor(args):
+    x = args[0]
+    return [math.floor(x)]
 
-def math_fmod(x, y):
-    print 'math.fmod NYI'
+def math_fmod(args):
+    x, y = args[0], args[1]
+    return [math.fmod(x, y)]
 
-def math_frexp(x):
-    print 'math.frexp NYI'
+def math_frexp(args):
+    x = args[0]
+    return [math.frexp(x)]
 
-math_huge = 9001
+math_huge = (1 << 32) - 1
 
-def math_ldexp(m, e):
-    print 'math.ldexp NYI'
+def math_ldexp(args):
+    m, e = args[0], args[1]
+    return [math.ldexp(m, e)]
 
-def math_log(x):
-    print 'math.log NYI'
+def math_log(args):
+    x = args[0]
+    return [math.log(x)]
 
-def math_log10(x):
-    print 'math.log10 NYI'
+def math_log10(args):
+    x = args[0]
+    return [math.log10(x)]
 
-def math_max(x, args=None):
-    print 'math.max NYI'
+def math_max(args):
+    assert len(args) > 0
+    return [max(args)]
 
-def math_min(x, args=None):
-    print 'math.min NYI'
+def math_min(args):
+    assert len(args) > 0
+    return [min(args)]
 
-def math_modf(x):
-    print 'math.modf NYI'
+def math_modf(args):
+    x = args[0]
+    return [math.modf(x)]
 
-math_pi = 3.14
+math_pi = math.pi
 
-def math_pow(x, y):
-    print 'math.pow NYI'
+def math_pow(args):
+    x, y = args[0], args[1]
+    return [math.pow(x, y)]
 
-def math_rad(x):
-    print 'math.rad NYI'
+def math_rad(args):
+    x = args[0]
+    return [math.radians(x)]
 
-def math_random(m=None, n=None):
-    print 'math.random NYI'
+def math_random(args):
+    argc = len(args)
+    if argc == 0:
+        return [random.random()]
+    elif argc == 1:
+        m = args[0]
+        assert isinstance(m, int)
+        return [random.randint(1, m)]
+    else:
+        m, n = args[0], args[1]
+        assert isinstance(m, int)
+        assert isinstance(n, int)
+        return [random.randint(m, n)]
 
-def math_randomseed(x):
-    print 'math.randomseed NYI'
+def math_randomseed(args):
+    x = args[0]
+    random.seed(x)
 
-def math_sin(x):
-    print 'math.sin NYI'
+def math_sin(args):
+    x = args[0]
+    return [math.sin(x)]
 
-def math_sinh(x):
-    print 'math.sinh NYI'
+def math_sinh(args):
+    x = args[0]
+    return [math.sinh(x)]
 
-def math_sqrt(x):
-    print 'math.sqrt NYI'
+def math_sqrt(args):
+    x = args[0]
+    return [math.sqrt(x)]
 
-def math_tan(x):
-    print 'math.tan NYI'
+def math_tan(args):
+    x = args[0]
+    return [math.tan(x)]
 
-def math_tanh(x):
-    print 'math.tanh NYI'
+def math_tanh(args):
+    x = args[0]
+    return [math.tanh(x)]
 
 math = LuaTable(hash={
     'abs': math_abs,
