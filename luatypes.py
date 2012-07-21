@@ -27,4 +27,8 @@ class LuaTable:
 
 class LuaValue:
     def __init__(self, value):
+        # the internal value
         self.value = value
+        # list of (closure, upvalue_index) pairs that reference this
+        # value as an upvalue
+        self.referencing_closures = []

@@ -292,7 +292,7 @@ class Interpreter:
         args = []
         if b == 0:
             # parameters are self.registers[a+1] to top of stack
-            args.extend([r.value for r in self.registers[a+1:-1]])
+            args.extend([r.value for r in self.registers[a+1:]])
         elif b >= 2:
             # there are b-1 parameters
             # so add b-1 parameters from registers to the args list
@@ -341,6 +341,11 @@ class Interpreter:
         elif b >= 2:
             # there are b - 1 results starting from r[a]
             results.extend([r.value for r in self.registers[a:b+1]])
+        # close all open variables
+        for reg in self.registers[a:]:
+            for (cl, i) in reg.referencing_closures:
+                cl.upvalues[i] = LuaValue(reg.value)
+
         # done if the call stack is empty
         if len(self.stack) == 0:
             self.done = True
@@ -416,7 +421,9 @@ class Interpreter:
 
     def close(self, inst):
         a, _, _ = self.getabc(inst)
-        print 'CLOSE NYI'
+        for reg in self.registers[a:]:
+            for (cl, i) in reg.referencing_closures:
+                cl.upvalues[i] = LuaValue(reg.value)
         self.trace('CLOSE', [a], [])
 
     def closure(self, inst):
@@ -432,11 +439,13 @@ class Interpreter:
                 _, b, _ = self.getabc(inst)
                 # alias this function's upvalue[i] to registers[b]
                 closure_func.upvalues[i] = self.registers[b]
+                self.registers[b].referencing_closures.append((closure_func, i))
             else:
                 assert opcode == 4 # GETUPVAL
                 _, b, _ = self.getabc(inst)
                 # alias this function's upvalue[i] to upvalues[b]
                 closure_func.upvalues[i] = self.upvalues[b]
+                self.upvalues[b].referencing_closures.append((closure_func, i))
         self.pc += closure_func.num_upvalues
         self.trace('CLOSURE', [a, bx], [a])
 
