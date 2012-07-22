@@ -181,9 +181,9 @@ class Interpreter:
             array_size = b_x if b_e == 0 else (10 + b_x) * (2 ** (b_e - 1))
             hash_size  = c_x if c_e == 0 else (10 + c_x) * (2 ** (c_e - 1))
             array = [None for _ in xrange(array_size)]
-            self.registers[a] = LuaTable(array=array, hash={})
+            self.registers[a].value = LuaTable(array=array, hash={})
         else:
-            self.registers[a] = LuaTable(array=[], hash={})
+            self.registers[a].value = LuaTable(array=[], hash={})
         self.trace('NEWTABLE', [a, b, c], [a])
 
     def self_(self, inst):
