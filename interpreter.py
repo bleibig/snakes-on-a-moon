@@ -274,13 +274,13 @@ class Interpreter:
 
     def test(self, inst):
         a, _, c = self.getabc(inst)
-        if self.registers[a].value == c:
+        if not bool(self.registers[a].value) == bool(c):
             self.pc += 1
         self.trace('TEST', [a, c], [])
 
     def testset(self, inst):
         a, b, c = self.getabc(inst)
-        if self.registers[b].value == c:
+        if bool(self.registers[b].value) == bool(c):
             self.pc += 1
         else:
             self.registers[a].value = self.registers[b].value
@@ -503,7 +503,7 @@ class Interpreter:
         Parameters:
             instruction - The instruction name as a string
             operands - List of the instructions operands as numbers
-            registers - List of indicies of registers being modified
+            registers - List of indices of registers being modified
                 by this instruction
             print_hr - If true, prints a horizontal rule after the trace,
                 to separate instructions from different function calls
