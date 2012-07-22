@@ -372,13 +372,10 @@ def math_random(args):
     if argc == 0:
         return [random.random()]
     elif argc == 1:
-        m = args[0]
-        assert isinstance(m, int)
+        m = int(args[0])
         return [random.randint(1, m)]
     else:
-        m, n = args[0], args[1]
-        assert isinstance(m, int)
-        assert isinstance(n, int)
+        m, n = int(args[0]), int(args[1])
         return [random.randint(m, n)]
 
 def math_randomseed(args):
