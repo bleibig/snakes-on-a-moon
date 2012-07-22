@@ -515,8 +515,9 @@ class Interpreter:
             indent = indent[2:]
         elif instruction == 'RETURN':
             indent = '  ' + indent
-        regstr = ' '.join(['r[{}]={}'.format(
-                    x, self.registers[x].value) for x in registers])
+        reg_values = [repr(r) if isinstance(r, str) else r
+                      for r in [self.registers[x].value for x in registers]]
+        regstr = ' '.join(['r[{}]={}'.format(x, r) for r in reg_values])
         op0 = operands[0] if len(operands) > 0 else ''
         op1 = operands[1] if len(operands) > 1 else ''
         op2 = operands[2] if len(operands) > 2 else ''

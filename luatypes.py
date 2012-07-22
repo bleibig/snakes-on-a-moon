@@ -19,8 +19,12 @@ class LuaTable:
         else:
             self.hash[key] = value
 
-#    def __str__(self):
-#        return 'array = %s, hash = %s' % (self.array, self.hash)
+    def __str__(self):
+        return 'LuaTable #array={} #hash={}'.format(
+            len(self.array), len(self.hash))
+
+    def __repr__(self):
+        return 'LuaTable(array={}, hash={})'.format(self.array, self.hash)
 
     def __len__(self):
         return len(self.array)
