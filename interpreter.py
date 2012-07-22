@@ -345,7 +345,6 @@ class Interpreter:
         for reg in self.registers[a:]:
             for (cl, i) in reg.referencing_closures:
                 cl.upvalues[i] = LuaValue(reg.value)
-
         # done if the call stack is empty
         if len(self.stack) == 0:
             self.done = True
@@ -525,6 +524,9 @@ class Interpreter:
             indent, instruction, op0, op1, op2, regstr)
         if print_hr:
             print '-' * 60
+
+    def reg_str(self):
+        return str([r.value for r in self.registers])
 
 def main():
     import sys
