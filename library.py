@@ -5,17 +5,22 @@ import math
 import random
 from luatypes import *
 
-def lua_assert(v, message=None):
-    print 'assert NYI'
+def lua_assert(args):
+    v = args[0]
+    message = args[1] if len(args) >= 2 else 'assertion failed!'
+    assert v != nil or v != False, message
+    return args
 
-def lua_collectgarbage(opt, arg=None):
-    print 'collectgarbage NYI'
+def lua_collectgarbage(args):
+    raise AssertionError('collectgarbage not supported')
 
 def lua_dofile(filename):
     print 'dofile NYI'
 
-def lua_error(message, level=None):
-    print 'error NYI'
+def lua_error(args):
+    message = args[0]
+    level = args[1] if len(args) > 1 else 1
+    raise AssertionError(message)
 
 _G = LuaTable(hash={ })
 _G['_G'] = _G
@@ -26,18 +31,20 @@ def lua_getfenv(f=None):
 def lua_getmetatable(object_):
     print 'getmetatable NYI'
 
-def lua_ipairs(t):
-    def iter_func(table, index):
+def lua_ipairs(args):
+    t = args[0]
+    def iter_func(args):
+        table = args[0]
+        index = args[1]
         assert isinstance(index, (int, long, float))
         assert int(index) == index
-        assert index > 0
         index = int(index)
         if index < len(table):
             nextindex = index + 1
-            return nextindex, table[nextindex]
+            return [nextindex, table[nextindex]]
         else:
             return None
-    return iter_func, t, 0
+    return [iter_func, t, 0]
 
 def lua_load(func, chunkname=None):
     print 'load NYI'
@@ -48,7 +55,9 @@ def lua_loadfile(filename=None):
 def lua_loadstring(string, chunkname=None):
     print 'loadstring NYI'
 
-def lua_next(table, index=None):
+def lua_next(args):
+    table = args[0]
+    index = args[1] if len(args) > 1 else None
     if index:
         if isinstance(index, (int, long, float)) \
             and int(index) == index \
@@ -57,27 +66,28 @@ def lua_next(table, index=None):
             index = int(index)
             if index < len(table):
                 nextindex = index + 1
-                return nextindex, table[nextindex]
+                return [nextindex, table[nextindex]]
             elif index == len(table):
                 # last array index, so return first index and element in hash
                 key = table.hash.keys()[0]
-                return key, table[key]
+                return [key, table[key]]
         # otherwise index is hash key
         keys = table.hash.keys()
         i = keys.index(index)
         if i < len(keys) - 1:
             nextkey = keys[i+1]
-            return nextkey, table[nextkey]
+            return [nextkey, table[nextkey]]
     else:
         if table.array:
-            return 1, table[1]
+            return [1, table[1]]
         elif table.hash:
             key = table.hash.keys()[0]
-            return key, table[key]
+            return [key, table[key]]
     return None
 
-def lua_pairs(t):
-    return lua_next, t, None
+def lua_pairs(args):
+    t = args[0]
+    return [lua_next, t, None]
 
 def lua_pcall(f, args):
     print 'pcall NYI'

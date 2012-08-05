@@ -392,9 +392,12 @@ class Interpreter:
         state = self.registers[a+1].value
         index = self.registers[a+2].value
         modified_regs = []
-        for i in xrange(a+3, a+c+3):
-            self.registers[i].value = self.fcall(iter_func, [state, index])
-            modified_regs.append(i)
+        results = self.fcall(iter_func, [state, index])
+        if results == None:
+            results = [None for _ in xrange(c)]
+        for i in xrange(c):
+            self.registers[a+3+i].value = results[i]
+            modified_regs.append(a+3+i)
         if self.registers[a+3].value is not None:
             self.registers[a+2].value = self.registers[a+3].value
             modified_regs.append(a+2)
