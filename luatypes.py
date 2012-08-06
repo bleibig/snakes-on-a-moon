@@ -2,6 +2,7 @@ class LuaTable:
     def __init__(self, array=None, hash=None):
         self.array = array or []
         self.hash = hash or {}
+        self.metatable = None
 
     def __getitem__(self, key):
         if isinstance(key, (int, long, float)) and int(key) == key and key > 0:

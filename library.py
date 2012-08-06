@@ -28,8 +28,13 @@ _G['_G'] = _G
 def lua_getfenv(f=None):
     print 'getfenv NYI'
 
-def lua_getmetatable(object_):
-    print 'getmetatable NYI'
+def lua_getmetatable(args):
+    object = args[0]
+    metatable = object.metatable
+    if metatable and '__metatable' in metatable.hash:
+        return [metatable['__metatable']]
+    else:
+        return [metatable]
 
 def lua_ipairs(args):
     t = args[0]
@@ -116,8 +121,13 @@ def lua_select(index, args):
 def lua_setfenv(f, table):
     print 'setfenv NYI'
 
-def lua_setmetatable(table, metatable):
-    print 'setmetatable NYI'
+def lua_setmetatable(args):
+    table = args[0]
+    metatable = args[1]
+    if table.metatable and '__metatable' in table.metatable.hash:
+        raise AssertionError('table has a "__metatable" field')
+    table.metatable = metatable
+    return [table]
 
 def lua_tonumber(e, base=None):
     print 'tonumber NYI'
