@@ -48,7 +48,7 @@ def lua_ipairs(args):
             nextindex = index + 1
             return [nextindex, table[nextindex]]
         else:
-            return None
+            return [None]
     return [iter_func, t, 0]
 
 def lua_load(func, chunkname=None):
@@ -88,7 +88,7 @@ def lua_next(args):
         elif table.hash:
             key = table.hash.keys()[0]
             return [key, table[key]]
-    return None
+    return [None]
 
 def lua_pairs(args):
     t = args[0]
@@ -115,8 +115,12 @@ def lua_rawget(table, index):
 def lua_rawset(table, index, value):
     print 'rawset NYI'
 
-def lua_select(index, args):
-    print 'select NYI'
+def lua_select(args):
+    index = args[0]
+    if isinstance(index, (int, long, float)):
+        return args[index+1:]
+    assert index == '#'
+    return [len(args) - 1]
 
 def lua_setfenv(f, table):
     print 'setfenv NYI'
@@ -129,17 +133,39 @@ def lua_setmetatable(args):
     table.metatable = metatable
     return [table]
 
-def lua_tonumber(e, base=None):
-    print 'tonumber NYI'
+def lua_tonumber(args):
+    e = args[0]
+    base = args[1] if len(args) > 1 else 10
+    return [int(e, base)]
 
-def lua_tostring(e):
-    print 'tostring NYI'
+def lua_tostring(args):
+    e = args[0]
+    # TODO check __tostring metamethod
+    return [str(e)]
 
-def lua_type(v):
-    print 'type NYI'
+def lua_type(args):
+    v = args[0]
+    if v == None:
+        return ['nil']
+    if isinstance(v, (int, long, float)):
+        return ['number']
+    if isinstance(v, str):
+        return ['string']
+    if isinstance(v, bool):
+        return ['boolean']
+    if isinstance(v, LuaTable):
+        return ['table']
+    if isinstance(v, LuaFunction) or hasattr(v, '__call__'):
+        return ['function']
+    # TODO check if thread or userdata
+    return ['thread or userdata']
 
-def lua_unpack(list_, i=None, j=None):
-    print 'unpack NYI'
+def lua_unpack(args):
+    list = args[0]
+    assert isinstance(list, LuaTable)
+    i = args[1] if len(args) > 1 else 1
+    j = args[2] if len(args) > 2 else len(list)
+    return [t[k] for k in xrange(i, j+1)]
 
 _VERSION = 'Lua 5.1'
 
