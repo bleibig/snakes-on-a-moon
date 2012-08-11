@@ -237,49 +237,69 @@ module = LuaTable(hash={
 
 # string library
 
-def string_byte(s, i=None, j=None):
-    print 'string.byte NYI'
+def string_byte(args):
+    s = args[0]
+    i = args[1] if len(args) > 1 else 1
+    j = args[2] if len(args) > 2 else 1
+    return [ord(s[k]) for k in xrange(i-1, j)]
 
-def string_char(args=None):
-    print 'string.char NYI'
+def string_char(args):
+    return [''.join([chr(i) for i in args])]
 
-def string_dump(function):
-    print 'string.dump NYI'
+def string_dump(args):
+    raise AssertionError('string.dump NYI')
 
-def string_find(s, pattern, init=None, plain=None):
-    print 'string.find NYI'
+def string_find(args):
+    raise AssertionError('string.find NYI')
 
 def string_format(args):
     formatstring = args[0]
     result = formatstring % tuple(args[1:])
     return [result]
 
-def string_gmatch(s, pattern):
-    print 'string.gmatch NYI'
+def string_gmatch(args):
+    raise AssertionError('string.gmatch NYI')
 
-def string_gsub(s, pattern, repl, n=None):
-    print 'string.gsub NYI'
+def string_gsub(args):
+    raise AssertionError('string.gsub NYI')
 
-def string_len(s):
-    print 'string.len NYI'
+def string_len(args):
+    s = args[0]
+    return [len(s)]
 
-def string_lower(s):
-    print 'string.lower NYI'
+def string_lower(args):
+    s = args[0]
+    return [str.lower(s)]
 
-def string_match(s, pattern, init=None):
-    print 'string.match NYI'
+def string_match(args):
+    raise AssertionError('string.match NYI')
 
-def string_rep(s, n):
-    print 'string.rep NYI'
+def string_rep(args):
+    s = args[0]
+    n = args[1]
+    return [s * n]
 
-def string_reverse(s):
-    print 'string.reverse NYI'
+def string_reverse(args):
+    s = args[0]
+    l = list(s)
+    l.reverse()
+    return [''.join(l)]
 
-def string_sub(s, i, j=None):
-    print 'string.sub NYI'
+def string_sub(args):
+    s = args[0]
+    i = args[1]
+    j = args[2] if len(args) > 2 else -1
+    if i > 0:
+        i = i - 1
+    elif i == 0:
+        i = 1
+    if j == -1:
+        j = len(s)
+    return [s[i:j]]
 
-def string_upper(s):
-    print 'string.upper NYI'
+def string_upper(args):
+    s = args[0]
+    return [str.upper(s)]
 
 string = LuaTable(hash={
     'byte': string_byte,
