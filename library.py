@@ -455,12 +455,11 @@ def math_random(args):
     argc = len(args)
     if argc == 0:
         return [random.random()]
-    elif argc == 1:
+    if argc == 1:
         m = int(args[0])
         return [random.randint(1, m)]
-    else:
-        m, n = int(args[0]), int(args[1])
-        return [random.randint(m, n)]
+    m, n = int(args[0]), int(args[1])
+    return [random.randint(m, n)]
 
 def math_randomseed(args):
     x = args[0]
@@ -524,46 +523,74 @@ math = LuaTable(hash={
 __default_input = sys.stdin
 __default_output = sys.stdout
 
-def io_close(file_=None):
-    print 'io.close NYI'
+def io_close(args):
+    file = args[0] if len(args) > 1 else __default_output
+    if file != __default_output:
+        file.close()
+    return [None]
 
-def io_flush():
-    print 'io.flush NYI'
+def io_flush(args):
+    __default_output.flush()
+    return [None]
 
-def io_input(file_=None):
-    print 'io.input NYI'
-
-def io_lines(filename=None):
-    print 'io.lines NYI'
-
-def io_open(filename, mode=None):
-    print 'io.open NYI'
-
-def io_output(file_=None):
-    global __default_output
-    if file_:
-        if type(file_) == str:
-            # filename, open it
-            __default_output = open(file_)
+def io_input(args):
+    file = arg[0] if len(args) > 1 else None
+    global __default_input
+    if file:
+        if isinstance(file, str):            
+            __default_input = open(file)
         else:
-            # otherwise file_ is a file handle
-            __default_output = file_
-    return __default_output
+            __default_input = file
+    return [__default_input]
 
-def io_popen(prog, mode=None):
-    print 'io.popen NYI'
+def io_lines(args):
+    filename = args[0] if len(args) > 1 else __default_input
+    f = open(filename)
+    def read_line():
+        try:
+            line = f.next()
+            return [line]
+        except StopIteration:
+            f.close()
+            return [None]
+    return [read_line]
 
-def io_read(args=None):
-    print 'io.read NYI'
+def io_open(args):
+    filename = args[0]
+    mode = args[1] if len(args) > 1 else ''
+    return [open(filename, mode)]
 
-def io_tmpfile():
-    print 'io.tmpfile NYI'
+def io_output(args):
+    file = args[0] if len(args) > 0 else None
+    global __default_output
+    if file:
+        if isinstance(file, str):
+            # filename, open it
+            __default_output = open(file)
+        else:
+            # otherwise file is a file handle
+            __default_output = file
+    return [__default_output]
 
-def io_type(obj):
-    print 'io.type NYI'
+def io_popen(args):
+    raise AssertionError('io.popen NYI')
 
-def io_write(args=None):
-    file_write(io_output(), args)
+def io_read(args):
+    return file_read([__default_input] + args)
+
+def io_tmpfile(args):
+    return [os.tmpfile()]
+
+def io_type(args):
+    obj = args[0]
+    if isinstance(obj, file):
+        if obj.closed:
+            return ['closed file']
+        return ['file']
+    return [None]
+
+def io_write(args):
+    return file_write([__default_output] + args)
 
 io = LuaTable(hash={
     'close': io_close,
@@ -585,32 +612,45 @@ io = LuaTable(hash={
 # take a file object i.e. "self" as a parameter.  Here the self
 # parameter is explicitly bound as file_obj.
 
-def file_close(file_obj):
-    print 'file.close NYI'
+def file_close(args):
+    file_obj = args[0]
+    file_obj.close()
+    return [None]
 
-def file_flush(file_obj):
-    print 'file.flush NYI'
+def file_flush(args):
+    file_obj = args[0]
+    file_obj.flush()
+    return [None]
 
-def file_lines(file_obj):
-    print 'file.lines NYI'
+def file_lines(args):
+    file_obj = args[0]
+    def read_line():
+        try:
+            line = file_obj.next()
+            return [line]
+        except StopIteration:
+            return [None]
+    return [read_line]
 
-def file_read(file_obj, args=None):
-    print 'file.read NYI'
+def file_read(args):
+    raise AssertionError('file.read NYI')
 
-def file_seek(file_obj, whence=None, offset=None):
-    print 'file.seek NYI'
+def file_seek(args):
+    raise AssertionError('file.seek NYI')
 
-def file_setvbuf(file_obj, mode, size=None):
-    print 'file.setvbuf NYI'
+def file_setvbuf(args):
+    raise AssertionError('file.setvbuf NYI')
 
-def file_write(file_obj, args=None):
-    for arg in args:
-        if isinstance(arg, float):
+def file_write(args):
+    file_obj = args[0]
+    for arg in args[1:]:
+        if isinstance(arg, (int, long, float)):
             if arg == int(arg):
                 arg = str(int(arg))
             else:
                 arg = str(arg)
         file_obj.write(arg)
+    return [None]
 
 file_ = LuaTable(hash={
     'close': file_close,
