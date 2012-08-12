@@ -320,20 +320,38 @@ string = LuaTable(hash={
 
 # table library
 
-def table_concat(table, sep=None, i=None, j=None):
-    print 'table.concat NYI'
+def table_concat(args):
+    lenargs = len(args)
+    table = args[0]
+    sep = args[1] if lenargs > 1 else ''
+    i = args[2] if lenargs > 2 else 1
+    j = args[3] if lenargs > 3 else len(table)
+    return [sep.join([str(table[k]) for k in xrange(i, j+1)])]
 
-def table_insert(table, pos=None, value=None):
-    print 'table.insert NYI'
+def table_insert(args):
+    table = args[0]
+    pos = args[1] if len(args) > 2 else len(table)+1
+    value = args[2] if len(args) > 2 else args[1]
+    table.array.insert(pos-1, value)
+    return []
 
-def table_maxn(table):
-    print 'table.maxn NYI'
+def table_maxn(args):
+    table = args[0]
+    i = len(table)
+    while i > 0:
+        if table[i] != None:
+            return [i]
+        i -= 1
+    return [0]
 
-def table_remove(table, pos):
-    print 'table.remove NYI'
+def table_remove(args):
+    table = args[0]
+    pos = args[1] if len(args) > 1 else len(table)
+    del table[pos]
+    return []
 
-def table_sort(table, comp):
-    print 'table.sort NYI'
+def table_sort(args):
+    raise AssertionError('table.sort NYI')
 
 table = LuaTable(hash={
     'concat': table_concat,
