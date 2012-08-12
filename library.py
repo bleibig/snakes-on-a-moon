@@ -3,6 +3,8 @@
 import sys
 import math
 import random
+import time
+import os
 from luatypes import *
 
 def lua_assert(args):
@@ -664,38 +666,82 @@ file_ = LuaTable(hash={
 
 # os library
 
-def os_clock():
-    print 'os.clock NYI'
+def os_clock(args):
+    return [time.clock()]
 
-def os_date(format=None, time=None):
-    print 'os.date NYI'
+def os_date(args):
+    format = str(args[0]) if len(args) > 0 else '%c'
+    time_ = args[1] if len(args) > 0 else time.time()
+    utc = False
+    if format[0] == '!':
+        utc = True
+        format = format[1:]
+    st = time.gmtime(time_) if utc else time.localtime(time_)
+    if format == '*t':
+        return [LuaTable(hash={
+                    'year': st.tm_year,
+                    'month': st.tm_mon,
+                    'day': st.tm_mday,
+                    'hour': st.tm_hour,
+                    'min': st.tm_min,
+                    'sec': st.tm_sec,
+                    'wday': ((st.tm_wday + 1) % 7) + 1,
+                    'yday': st.tm_yday,
+                    'isdst': bool(st.isdst)
+                    })]
+    return [time.strftime(format, st)]
 
-def os_difftime(t2, t1):
-    print 'os.difftime NYI'
+def os_difftime(args):
+    t2 = args[0]
+    t1 = args[1]
+    return [t2 - t1]
 
-def os_execute(command=None):
-    print 'os.execute NYI'
+def os_execute(args):
+    raise AssertionError('os.execute NYI')
 
-def os_exit(code=None):
-    print 'os.exit NYI'
+def os_exit(args):
+    code = args[0] if len(args) > 0 else 0
+    exit(code)
 
-def os_getenv(varname):
-    print 'os.getenv NYI'
+def os_getenv(args):
+    varname = args[0]
+    return [os.genenv(varname)]
 
-def os_remove(filename):
-    print 'os.remove NYI'
+def os_remove(args):
+    filename = args[0]
+    try:
+        os.remove(filename)
+        return [None]
+    except OSError as e:
+        return [None, str(e)]
 
-def os_rename(oldname, newname):
-    print 'os.rename NYI'
+def os_rename(args):
+    oldname = args[0]
+    newname = args[1]
+    try:
+        os.rename(oldname, newname)
+        return [None]
+    except OSError as e:
+        return [None, str(e)]
 
-def os_setlocale(locale, category=None):
-    print 'os.setlocale NYI'
+def os_setlocale(args):
+    raise AssertionError('os.setlocale NYI')
 
-def os_time(table=None):
-    print 'os.time NYI'
+def os_time(args):
+    table = args[0] if len(args) > 0 else None
+    if table:
+        year = table['year']
+        month = table['month']
+        day = table['day']
+        hour = table['hour'] or 0
+        min = table['min'] or 0
+        sec = table['sec'] or 0
+        isdst = table['isdst'] or -1
+        return [time.mktime((year, month, day, hour, min, sec, 0, 0, isdst))]
+    return [int(time.time())]
 
-def os_tmpname():
-    print 'os.tmpname NYI'
+def os_tmpname(args):
+    return [os.tmpnam()]
 
 os = LuaTable(hash={
     'clock': os_clock,
