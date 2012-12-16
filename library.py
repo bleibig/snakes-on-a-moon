@@ -138,12 +138,14 @@ def lua_setmetatable(args):
 def lua_tonumber(args):
     e = args[0]
     base = args[1] if len(args) > 1 else 10
-    result = 0
     try:
-        result = int(str(e), base)
+        if base == 10:
+            return [float(e)]
+        elif e == int(e):
+            return [int(e, base)]
     except ValueError:
-        result = None
-    return [result]
+        pass
+    return [None]
 
 def lua_tostring(args):
     e = args[0]

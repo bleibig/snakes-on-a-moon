@@ -139,7 +139,7 @@ class Interpreter:
 
     def getupval(self, inst):
         a, b, _ = self.getabc(inst)
-        self.registers[a] = self.upvalues[b]
+        self.registers[a].value = self.upvalues[b].value
         self.trace('GETUPVAL', [a, b], [a])
 
     def getglobal(self, inst):
@@ -330,7 +330,7 @@ class Interpreter:
         self.registers = [LuaValue(arg) for arg in args]
         while len(self.registers) < function.max_stack_size:
             self.registers.append(LuaValue(None))
-        self.upvalues = function.upvalues
+        self.upvalues = function.upv
         self.pc = -1
         self.trace('TAILCALL', [a, b], [])
 
@@ -346,7 +346,7 @@ class Interpreter:
         # close all open variables
         for reg in self.registers[a:]:
             for (cl, i) in reg.referencing_closures:
-                cl.upvalues[i] = LuaValue(reg.value)
+                cl.upv[i] = LuaValue(reg.value)
         # done if the call stack is empty
         if len(self.stack) == 0:
             self.done = True
@@ -427,28 +427,28 @@ class Interpreter:
         a, _, _ = self.getabc(inst)
         for reg in self.registers[a:]:
             for (cl, i) in reg.referencing_closures:
-                cl.upvalues[i] = LuaValue(reg.value)
+                cl.upv[i] = LuaValue(reg.value)
         self.trace('CLOSE', [a], [])
 
     def closure(self, inst):
         a, bx = self.getabx(inst)
         closure_func = self.function.prototypes[bx]
         self.registers[a].value = closure_func
-        self.function.prototypes[bx].upv = []
+        self.function.prototypes[bx].upv = [None] * closure_func.num_upvalues
         for i in xrange(0, closure_func.num_upvalues):
             inst_bytestring = self.function.instructions[self.pc + i + 1]
             inst = struct.unpack('I', inst_bytestring)[0]
             opcode = inst & 0x0000003f
             if opcode == 0: # MOVE
                 _, b, _ = self.getabc(inst)
-                # alias this function's upvalue[i] to registers[b]
-                closure_func.upvalues[i] = self.registers[b]
+                # alias this function's upv[i] to registers[b]
+                closure_func.upv[i] = self.registers[b]
                 self.registers[b].referencing_closures.append((closure_func, i))
             else:
                 assert opcode == 4 # GETUPVAL
                 _, b, _ = self.getabc(inst)
-                # alias this function's upvalue[i] to upvalues[b]
-                closure_func.upvalues[i] = self.upvalues[b]
+                # alias this function's upv[i] to upvalues[b]
+                closure_func.upv[i] = self.upvalues[b]
                 self.upvalues[b].referencing_closures.append((closure_func, i))
         self.pc += closure_func.num_upvalues
         self.trace('CLOSURE', [a, bx], [a])
@@ -490,7 +490,7 @@ class Interpreter:
             self.registers = [LuaValue(arg) for arg in args]
             while len(self.registers) < function.max_stack_size:
                 self.registers.append(LuaValue(None))
-            self.upvalues = function.upvalues
+            self.upvalues = function.upv
             self.pc = -1
 
     def rk(self, o):

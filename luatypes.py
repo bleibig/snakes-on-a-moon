@@ -37,3 +37,5 @@ class LuaValue:
         # list of (closure, upvalue_index) pairs that reference this
         # value as an upvalue
         self.referencing_closures = []
+    def __repr__(self):
+        return 'LuaValue(' + str(self.value) + ')'
