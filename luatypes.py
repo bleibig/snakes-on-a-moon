@@ -7,7 +7,7 @@ class LuaTable:
     def __getitem__(self, key):
         if isinstance(key, (int, long, float)) and int(key) == key and key > 0:
             key = int(key)
-            return self.array[key-1] if len(self.array) >= key-1 else None
+            return self.array[key-1] if len(self.array) >= key else None
         else:
             return self.hash[key] if key in self.hash else None
 

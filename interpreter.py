@@ -90,7 +90,9 @@ class Interpreter:
                 assert isinstance(reg, LuaValue)
             for upv in self.upvalues:
                 assert isinstance(upv, LuaValue)
-            for g in self.globals:
+            for g in self.globals.array:
+                assert not isinstance(g, LuaValue)
+            for g in self.globals.hash:
                 assert not isinstance(g, LuaValue)
 
     @staticmethod
