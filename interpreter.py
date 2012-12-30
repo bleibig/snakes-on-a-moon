@@ -40,7 +40,7 @@ lua_globals = {
     'table': library.table,
     'math': library.math,
     'io': library.io,
-    'os': library.os,
+    'os': library.os_,
     'debug': library.debug,
     }
 
@@ -54,7 +54,7 @@ class Frame:
 class Interpreter:
     def __init__(self, lua_object, arg, print_trace=False):
         self.globals = LuaTable(hash=lua_globals)
-        self.globals['arg'] = LuaTable(array=arg[1:], hash={0: arg[0]})
+        self.globals.set('arg', LuaTable(array=arg[1:], hash={0: arg[0]}))
         self.top_level_func = lua_object.top_level_func
         self.stack = [] # call stack
         self.done = False
@@ -145,20 +145,20 @@ class Interpreter:
     def getglobal(self, inst):
         a, bx = self.getabx(inst)
         global_name = self.function.constants[bx]
-        self.registers[a].value = self.globals[global_name]
+        self.registers[a].value = self.globals.get(global_name)
         self.trace('GETGLOBAL', [a, bx], [a])
 
     def gettable(self, inst):
         a, b, c = self.getabc(inst)
         table = self.registers[b].value
         index = self.rk(c)
-        self.registers[a].value = table[index]
+        self.registers[a].value = table.get(index)
         self.trace('GETTABLE', [a, b, c], [a])
 
     def setglobal(self, inst):
         a, bx = self.getabx(inst)
         global_name = self.function.constants[bx]
-        self.globals[global_name] = self.registers[a].value
+        self.globals.set(global_name, self.registers[a].value)
         self.trace('SETGLOBAL', [a, bx], [])
 
     def setupval(self, inst):
@@ -170,7 +170,7 @@ class Interpreter:
         a, b, c = self.getabc(inst)
         table = self.registers[a].value
         index = self.rk(b)
-        table[index] = self.rk(c)
+        table.set(index, self.rk(c))
         self.trace('SETTABLE', [a, b, c], [])
 
     def newtable(self, inst):
@@ -192,7 +192,7 @@ class Interpreter:
         a, b, c = self.getabc(inst)
         table = self.registers[b].value
         self.registers[a+1].value = b
-        self.registers[a].value = table[self.rk(c)]
+        self.registers[a].value = table.get(self.rk(c))
         self.trace('SELF', [a, b, c], [a+1, a])
         
     def add(self, inst):
@@ -294,7 +294,7 @@ class Interpreter:
         args = []
         if b == 0:
             # parameters are self.registers[a+1] to top of stack
-            args.extend([r.value for r in self.registers[a+1:-1]])
+            args.extend([r.value for r in self.registers[a+1:]])
         elif b >= 2:
             # there are b-1 parameters
             # so add b-1 parameters from registers to the args list
@@ -413,14 +413,16 @@ class Interpreter:
         if b == 0:
             # set table from elements from r[a+1] to top of stack
             for i in xrange(1, len(self.registers[(a+1):])):
-                table[(c-1)*FIELDS_PER_FLUSH+i] = self.registers[a+i].value
+                table.set((c-1)*FIELDS_PER_FLUSH+i,
+                          self.registers[a+i].value)
         else:
             if c == 0:
                 # cast next instruction as int and let that be c
                 c = self.function.instructions[self.pc+1]
                 self.pc += 1 # and skip next instruction as its not an instruction
             for i in xrange(1, b+1):
-                table[(c-1)*FIELDS_PER_FLUSH+i] = self.registers[a+i].value
+                table.set((c-1)*FIELDS_PER_FLUSH+i,
+                          self.registers[a+i].value)
         self.trace('SETLIST', [a, b, c], [])
 
     def close(self, inst):
@@ -461,7 +463,7 @@ class Interpreter:
         modified_regs = []
         for i in xrange(a, len(self.registers) if b == 0 else a+b-1):
             modified_regs.append(i)
-            self.registers[i].value = argtable[i-a+1] if argtable else None
+            self.registers[i].value = argtable.get(i-a+1) if argtable else None
         self.trace('VARARG', [a, b], modified_regs)
 
     def fcall(self, function, args):
@@ -545,7 +547,7 @@ def main():
         print 'usage: interpreter.py [--trace] lua-file'
         exit(1)
     filename = sys.argv[1]
-    if filename[-4:] == '.lua':
+    if filename.endswith('.lua'):
         # file is a lua script, compile with luac first
         import subprocess
         subprocess.check_call(['luac', '-o', filename + 'c', filename])

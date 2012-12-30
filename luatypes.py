@@ -4,14 +4,14 @@ class LuaTable:
         self.hash = hash or {}
         self.metatable = None
 
-    def __getitem__(self, key):
+    def get(self, key):
         if isinstance(key, (int, long, float)) and int(key) == key and key > 0:
             key = int(key)
             return self.array[key-1] if len(self.array) >= key else None
         else:
             return self.hash[key] if key in self.hash else None
 
-    def __setitem__(self, key, value):
+    def set(self, key, value):
         if isinstance(key, (int, long, float)) and int(key) == key and key > 0:
             key = int(key)
             while key > len(self.array):

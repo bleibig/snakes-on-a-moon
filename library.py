@@ -24,8 +24,8 @@ def lua_error(args):
     level = args[1] if len(args) > 1 else 1
     raise AssertionError(message)
 
-_G = LuaTable(hash={ })
-_G['_G'] = _G
+_G = LuaTable()
+_G.set('_G', _G)
 
 def lua_getfenv(f=None):
     print 'getfenv NYI'
@@ -712,7 +712,7 @@ def os_exit(args):
 
 def os_getenv(args):
     varname = args[0]
-    return [os.genenv(varname)]
+    return [os.getenv(varname)]
 
 def os_remove(args):
     filename = args[0]
@@ -750,7 +750,7 @@ def os_time(args):
 def os_tmpname(args):
     return [os.tmpnam()]
 
-os = LuaTable(hash={
+os_ = LuaTable(hash={
     'clock': os_clock,
     'date': os_date,
     'difftime': os_difftime,
