@@ -460,6 +460,8 @@ class Interpreter:
         argtable = self.registers[self.function.num_parameters].value \
             if self.function.is_vararg_flag & 0x2 \
             else None
+        self.registers.extend([LuaValue(None) for _ in
+                               xrange(len(argtable) - len(self.registers) + a)])
         modified_regs = []
         for i in xrange(a, len(self.registers) if b == 0 else a+b-1):
             modified_regs.append(i)
@@ -524,7 +526,8 @@ class Interpreter:
             indent = '  ' + indent
         reg_values = [repr(r) if isinstance(r, str) else r
                       for r in [self.registers[x].value for x in registers]]
-        regstr = ' '.join(['r[{}]={}'.format(x, r) for r in reg_values])
+        regstr = ' '.join(['r[{}]={}'.format(x, r)
+                           for (x, r) in zip(registers, reg_values)])
         op0 = operands[0] if len(operands) > 0 else ''
         op1 = operands[1] if len(operands) > 1 else ''
         op2 = operands[2] if len(operands) > 2 else ''
