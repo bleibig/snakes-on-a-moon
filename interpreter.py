@@ -276,13 +276,15 @@ class Interpreter:
 
     def test(self, inst):
         a, _, c = self.getabc(inst)
-        if not bool(self.registers[a].value) == bool(c):
+        ra = self.registers[a].value
+        if not (ra != None and ra != False) == bool(c):
             self.pc += 1
         self.trace('TEST', [a, c], [])
 
     def testset(self, inst):
         a, b, c = self.getabc(inst)
-        if bool(self.registers[b].value) == bool(c):
+        rb = self.registers[b].value
+        if (rb != None and rb != False) == bool(c):
             self.pc += 1
         else:
             self.registers[a].value = self.registers[b].value

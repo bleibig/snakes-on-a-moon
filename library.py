@@ -143,7 +143,7 @@ def lua_tonumber(args):
             return [float(e)]
         elif e == int(e):
             return [int(e, base)]
-    except ValueError:
+    except (ValueError, TypeError):
         pass
     return [None]
 
