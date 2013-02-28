@@ -201,7 +201,7 @@ def coroutine_wrap(f):
 def coroutine_yield(f):
     print 'coroutine.yield NYI'
 
-coroutine = LuaTable(hash={
+lua_coroutine = LuaTable(hash={
     'create': coroutine_create,
     'resume': coroutine_resume,
     'running': coroutine_running,
@@ -234,7 +234,7 @@ package_preload = LuaTable()
 def package_seeall(module):
     print 'package.seeall NYI'
 
-module = LuaTable(hash={
+lua_module = LuaTable(hash={
     'cpath': package_cpath,
     'loaded': package_loaded,
     'loaders': package_loaders,
@@ -310,7 +310,7 @@ def string_upper(args):
     s = args[0]
     return [str.upper(s)]
 
-string = LuaTable(hash={
+lua_string = LuaTable(hash={
     'byte': string_byte,
     'char': string_char,
     'dump': string_dump,
@@ -362,7 +362,7 @@ def table_remove(args):
 def table_sort(args):
     raise AssertionError('table.sort NYI')
 
-table = LuaTable(hash={
+lua_table = LuaTable(hash={
     'concat': table_concat,
     'insert': table_insert,
     'maxn': table_maxn,
@@ -494,7 +494,7 @@ def math_tanh(args):
     x = args[0]
     return [math.tanh(x)]
 
-math = LuaTable(hash={
+lua_math = LuaTable(hash={
     'abs': math_abs,
     'acos': math_acos,
     'asin': math_asin,
@@ -601,7 +601,7 @@ def io_type(args):
 def io_write(args):
     return file_write([__default_output] + args)
 
-io = LuaTable(hash={
+lua_io = LuaTable(hash={
     'close': io_close,
     'flush': io_flush,
     'input': io_input,
@@ -750,7 +750,7 @@ def os_time(args):
 def os_tmpname(args):
     return [os.tmpnam()]
 
-os_ = LuaTable(hash={
+lua_os = LuaTable(hash={
     'clock': os_clock,
     'date': os_date,
     'difftime': os_difftime,
@@ -808,7 +808,7 @@ def debug_setupvalue(func, up, value):
 def debug_traceback(thread=None, message=None, level=None):
     print 'debug.traceback NYI'
 
-debug = LuaTable(hash={
+lua_debug = LuaTable(hash={
     'debug': debug_debug,
     'getfenv': debug_getfenv,
     'gethook': debug_gethook,

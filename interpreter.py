@@ -34,14 +34,14 @@ lua_globals = {
     'unpack': library.lua_unpack,
     '_VERSION': library._VERSION, 
     'xpcall': library.lua_xpcall,
-    'coroutine': library.coroutine,
-    'module': library.module,
-    'string': library.string,
-    'table': library.table,
-    'math': library.math,
-    'io': library.io,
-    'os': library.os_,
-    'debug': library.debug,
+    'coroutine': library.lua_coroutine,
+    'module': library.lua_module,
+    'string': library.lua_string,
+    'table': library.lua_table,
+    'math': library.lua_math,
+    'io': library.lua_io,
+    'os': library.lua_os,
+    'debug': library.lua_debug,
     }
 
 class Frame:
