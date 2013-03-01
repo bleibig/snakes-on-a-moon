@@ -45,9 +45,10 @@ lua_globals = {
     }
 
 class Frame:
-    def __init__(self, function, registers, upvalues, pc):
+    def __init__(self, function, registers, tos, upvalues, pc):
         self.function = function
         self.registers = registers
+        self.tos = tos
         self.upvalues = upvalues
         self.pc = pc
 
@@ -75,6 +76,7 @@ class Interpreter:
         # initialize data for current function
         self.function = self.top_level_func
         self.registers = [LuaValue(None) for _ in xrange(self.function.max_stack_size)]
+        self.tos = len(self.registers)
         self.upvalues = function.upv if hasattr(self.function, 'upv') else []
         self.pc = 0 # program counter
         # main loop
@@ -296,7 +298,7 @@ class Interpreter:
         args = []
         if b == 0:
             # parameters are self.registers[a+1] to top of stack
-            args.extend([r.value for r in self.registers[a+1:]])
+            args.extend([r.value for r in self.registers[a+1:self.tos]])
         elif b >= 2:
             # there are b-1 parameters
             # so add b-1 parameters from registers to the args list
@@ -314,9 +316,13 @@ class Interpreter:
         else:
             if c == 0:
                 # save return results into registers staring from r[a]
-                modified_regs = range(a, len(results))
-                for i in xrange(len(results)):
+                l = len(results)
+                modified_regs = range(a, l)
+                for i in xrange(l):
                     self.registers[a+i].value = results[i]
+                # set top of stack to last register assigned
+                self.tos = a + l
+                    
             elif c >= 2:
                 # save c-1 return results starting from r[a]
                 modified_regs = range(a, c-1)
@@ -357,14 +363,17 @@ class Interpreter:
         last_frame = self.stack.pop()
         self.function = last_frame.function
         self.registers = last_frame.registers
+        self.tos = last_frame.tos
         self.upvalues = last_frame.upvalues
         self.pc = last_frame.pc
         call_a = last_frame.call_a
         call_c = last_frame.call_c
         if call_c == 0:
             # save return results into registers staring from r[a]
-            for i in xrange(len(results)):
+            l = len(results)
+            for i in xrange(l):
                 self.registers[call_a+i].value = results[i]
+            self.tos = call_a + l
         elif call_c >= 2:
             # save c-1 return results starting from r[a]
             for i in xrange(call_c-1):
@@ -464,6 +473,7 @@ class Interpreter:
             else None
         self.registers.extend([LuaValue(None) for _ in
                                xrange(len(argtable) - len(self.registers) + a)])
+        self.tos = len(self.registers)
         modified_regs = []
         for i in xrange(a, len(self.registers) if b == 0 else a+b-1):
             modified_regs.append(i)
@@ -490,12 +500,13 @@ class Interpreter:
                 args = new_args
             # push current frame onto stack
             self.stack.append(Frame(self.function, self.registers,
-                                    self.upvalues, self.pc))
+                                    self.tos, self.upvalues, self.pc))
             # initialize data for current function
             self.function = function
             self.registers = [LuaValue(arg) for arg in args]
             while len(self.registers) < function.max_stack_size:
                 self.registers.append(LuaValue(None))
+            self.tos = len(self.registers)
             self.upvalues = function.upv
             self.pc = -1
 
