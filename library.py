@@ -16,8 +16,8 @@ def lua_assert(args):
 def lua_collectgarbage(args):
     raise AssertionError('collectgarbage not supported')
 
-def lua_dofile(filename):
-    print 'dofile NYI'
+def lua_dofile(args):
+    raise AssertionError('dofile NYI')
 
 def lua_error(args):
     message = args[0]
@@ -27,8 +27,8 @@ def lua_error(args):
 _G = LuaTable()
 _G.set('_G', _G)
 
-def lua_getfenv(f=None):
-    print 'getfenv NYI'
+def lua_getfenv(args):
+    raise AssertionError('getfenv NYI')
 
 def lua_getmetatable(args):
     object = args[0]
@@ -53,14 +53,14 @@ def lua_ipairs(args):
             return [None]
     return [iter_func, t, 0]
 
-def lua_load(func, chunkname=None):
-    print 'load NYI'
+def lua_load(args):
+    raise AssertionError('load NYI')
 
-def lua_loadfile(filename=None):
-    print 'loadfile NYI'
+def lua_loadfile(args):
+    raise AssertionError('loadfile NYI')
 
-def lua_loadstring(string, chunkname=None):
-    print 'loadstring NYI'
+def lua_loadstring(args):
+    raise AssertionError('loadstring NYI')
 
 def lua_next(args):
     table = args[0]
@@ -96,8 +96,8 @@ def lua_pairs(args):
     t = args[0]
     return [lua_next, t, None]
 
-def lua_pcall(f, args):
-    print 'pcall NYI'
+def lua_pcall(args):
+    raise AssertionError('pcall NYI')
 
 def lua_print(args):
     for arg in args:
@@ -108,14 +108,14 @@ def lua_print(args):
         print '\t',
     print
 
-def lua_rawequal(v1, v2):
-    print 'rawequal NYI'
+def lua_rawequal(args):
+    raise AssertionError('rawequal NYI')
 
-def lua_rawget(table, index):
-    print 'rawget NYI'
+def lua_rawget(args):
+    raise AssertionError('rawget NYI')
 
-def lua_rawset(table, index, value):
-    print 'rawset NYI'
+def lua_rawset(args):
+    raise AssertionError('rawset NYI')
 
 def lua_select(args):
     index = args[0]
@@ -124,8 +124,8 @@ def lua_select(args):
     assert index == '#'
     return [len(args) - 1]
 
-def lua_setfenv(f, table):
-    print 'setfenv NYI'
+def lua_setfenv(args):
+    raise AssertionError('setfenv NYI')
 
 def lua_setmetatable(args):
     table = args[0]
@@ -178,28 +178,28 @@ def lua_unpack(args):
 
 _VERSION = 'Lua 5.1'
 
-def lua_xpcall(f, err):
-    print 'xpcall NYI'
+def lua_xpcall(args):
+    raise AssertionError('xpcall NYI')
 
 # coroutine library
 
-def coroutine_create(f):
-    print 'coroutine.create NYI'
+def coroutine_create(args):
+    raise AssertionError('coroutine.create NYI')
 
-def coroutine_resume(co, vals=None):
-    print 'coroutine.resume NYI'
+def coroutine_resume(args):
+    raise AssertionError('coroutine.resume NYI')
 
-def coroutine_running():
-    print 'coroutine.running NYI'
+def coroutine_running(args):
+    raise AssertionError('coroutine.running NYI')
 
-def coroutine_status(co):
-    print 'coroutine.status NYI'
+def coroutine_status(args):
+    raise AssertionError('coroutine.status NYI')
 
-def coroutine_wrap(f):
-    print 'coroutine.wrap NYI'
+def coroutine_wrap(args):
+    raise AssertionError('coroutine.wrap NYI')
 
-def coroutine_yield(f):
-    print 'coroutine.yield NYI'
+def coroutine_yield(args):
+    raise AssertionError('coroutine.yield NYI')
 
 lua_coroutine = LuaTable(hash={
     'create': coroutine_create,
@@ -212,11 +212,11 @@ lua_coroutine = LuaTable(hash={
 
 # module library
 
-def lua_module(name, args=None):
-    print 'module NYI'
+def lua_module(args):
+    raise AssertionError('module NYI')
 
-def lua_require(modname):
-    print 'require NYI'
+def lua_require(args):
+    raise AssertionError('require NYI')
 
 package_cpath = ''
 
@@ -224,15 +224,15 @@ package_loaded = LuaTable()
 
 package_loaders = LuaTable()
 
-def package_loadlib(libname, funcname):
-    print 'package.loadlib NYI'
+def package_loadlib(args):
+    raise AssertionError('package.loadlib NYI')
 
 package_path = ''
 
 package_preload = LuaTable()
 
-def package_seeall(module):
-    print 'package.seeall NYI'
+def package_seeall(args):
+    raise AssertionError('package.seeall NYI')
 
 lua_module = LuaTable(hash={
     'cpath': package_cpath,
@@ -766,47 +766,47 @@ lua_os = LuaTable(hash={
 
 # debug library
 
-def debug_debug():
-    print 'debug.debug NYI'
+def debug_debug(args):
+    raise AssertionError('debug.debug NYI')
 
-def debug_getfenv(o):
-    print 'debug.getfenv NYI'
+def debug_getfenv(args):
+    raise AssertionError('debug.getfenv NYI')
 
-def debug_gethook(thread=None):
-    print 'debug.gethook NYI'
+def debug_gethook(args):
+    raise AssertionError('debug.gethook NYI')
 
-def debug_getinfo(thread=None, function=None, what=None):
-    print 'debug.getinfo NYI'
+def debug_getinfo(args):
+    raise AssertionError('debug.getinfo NYI')
 
-def debug_getlocal(thread=None, level=None, local=None):
-    print 'debug.getlocal NYI'
+def debug_getlocal(args):
+    raise AssertionError('debug.getlocal NYI')
 
-def debug_getmetatable(object_):
-    print 'debug.getmetatable NYI'
+def debug_getmetatable(args):
+    raise AssertionError('debug.getmetatable NYI')
 
-def debug_getregistry():
-    print 'debug.getregistry NYI'
+def debug_getregistry(args):
+    raise AssertionError('debug.getregistry NYI')
 
-def debug_getupvalue(func, up):
-    print 'debug.getupvalue NYI'
+def debug_getupvalue(args):
+    raise AssertionError('debug.getupvalue NYI')
 
-def debug_setfenv(object_, table):
-    print 'debug.setfenv NYI'
+def debug_setfenv(args):
+    raise AssertionError('debug.setfenv NYI')
 
-def debug_sethook(thread=None, hook=None, mask=None, count=None):
-    print 'debug.sethook NYI'
+def debug_sethook(args):
+    raise AssertionError('debug.sethook NYI')
 
-def debug_setlocal(thread=None, level=None, local=None, value=None):
-    print 'debug.setlocal NYI'
+def debug_setlocal(args):
+    raise AssertionError('debug.setlocal NYI')
 
-def debug_setmetatable(object_, table):
-    print 'debug.setmetatable NYI'
+def debug_setmetatable(args):
+    raise AssertionError('debug.setmetatable NYI')
 
-def debug_setupvalue(func, up, value):
-    print 'debug.setupvalue NYI'
+def debug_setupvalue(args):
+    raise AssertionError('debug.setupvalue NYI')
 
-def debug_traceback(thread=None, message=None, level=None):
-    print 'debug.traceback NYI'
+def debug_traceback(args):
+    raise AssertionError('debug.traceback NYI')
 
 lua_debug = LuaTable(hash={
     'debug': debug_debug,
