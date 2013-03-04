@@ -77,7 +77,7 @@ class Interpreter:
         self.function = self.top_level_func
         self.registers = [LuaValue(None) for _ in xrange(self.function.max_stack_size)]
         self.tos = len(self.registers)
-        self.upvalues = function.upv if hasattr(self.function, 'upv') else []
+        self.upvalues = self.function.upv if hasattr(self.function, 'upv') else []
         self.pc = 0 # program counter
         # main loop
         while not self.done and self.pc < len(self.function.instructions):
@@ -552,27 +552,37 @@ class Interpreter:
     def reg_str(self):
         return str([r.value for r in self.registers])
 
-def main():
-    import sys
+def entry_point(argv):
     import parser
+    import os
     trace = False
-    if '--trace' in sys.argv:
+    if '--trace' in argv:
         trace=True
-        sys.argv.remove('--trace')
-    if len(sys.argv) < 2:
+        argv.remove('--trace')
+    if len(argv) < 2:
         print 'usage: interpreter.py [--trace] lua-file'
         exit(1)
-    filename = sys.argv[1]
+    filename = argv[1]
     if filename.endswith('.lua'):
         # file is a lua script, compile with luac first
         import subprocess
-        subprocess.check_call(['luac', '-o', filename + 'c', filename])
+        subprocess.Popen(['luac', '-o', filename + 'c', filename])
         filename += 'c'
-    bcfile = open(filename, 'rb') # r = read, b = binary file
-    bytecode = bcfile.read()
+    bcfile = os.open(filename, os.O_RDONLY, 0777)
+    bytecode = ""
+    while True:
+        read = os.read(bcfile, 4096)
+        if len(read) == 0:
+            break
+        bytecode += read
+    os.close(bcfile)    
     lua_bytecode = parser.LuaBytecode(bytecode)
-    interpreter = Interpreter(lua_bytecode, sys.argv[1:], trace)
+    interpreter = Interpreter(lua_bytecode, argv[1:], trace)
     interpreter.run()
 
+def target(*args):
+    return entry_point, None
+
 if __name__ == '__main__':
-    main()
+    import sys
+    entry_point(sys.argv)
