@@ -123,7 +123,7 @@ class Interpreter:
 
     def loadk(self, inst):
         a, bx = self.getabx(inst)
-        self.registers[a].value = self.function.constants[bx]
+        self.registers[a].value = self.function.constants[bx].value
         self.trace('LOADK', [a, bx], [a])
         
     def loadbool(self, inst):
@@ -146,7 +146,7 @@ class Interpreter:
 
     def getglobal(self, inst):
         a, bx = self.getabx(inst)
-        global_name = self.function.constants[bx]
+        global_name = self.function.constants[bx].value
         self.registers[a].value = self.globals.get(global_name)
         self.trace('GETGLOBAL', [a, bx], [a])
 
@@ -159,7 +159,7 @@ class Interpreter:
 
     def setglobal(self, inst):
         a, bx = self.getabx(inst)
-        global_name = self.function.constants[bx]
+        global_name = self.function.constants[bx].value
         self.globals.set(global_name, self.registers[a].value)
         self.trace('SETGLOBAL', [a, bx], [])
 
@@ -513,7 +513,7 @@ class Interpreter:
     def rk(self, o):
         # returns unwrapped value
         if o & 256:
-            return self.function.constants[o-256]
+            return self.function.constants[o-256].value
         else:
             return self.registers[o].value
 
